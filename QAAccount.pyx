@@ -41,41 +41,44 @@ cdef class QA_Account:
     cdef public str market_type
     cdef public str frequence
     cdef public str broker
-    cdef init_hold
-    cdef float init_cash
-    cdef float commission_coeff
-    cdef float tax_coeff
-    cdef dict margin_level
-    cdef bint allow_t0
-    cdef bint allow_sellopen
-    cdef bint allow_margin
+    cdef public object init_hold
+    cdef public float init_cash
+    cdef public float commission_coeff
+    cdef public float tax_coeff
+    cdef public dict margin_level
+    cdef public bint allow_t0
+    cdef public bint allow_sellopen
+    cdef public bint allow_margin
     cdef public str running_environment
-    cdef bint auto_reload
+    cdef public bint auto_reload
     cdef public str generated
     cdef public str start
     cdef public str end 
-    cdef list _market_data
+    cdef public list _market_data
     cdef public str _currenttime
     cdef public str datetime
     cdef public str running_time
-    cdef public client
+    cdef public object client
     cdef public str quantaxis_version
     cdef public str start_
     cdef public str end_
-    cdef public orders
+    cdef public object orders
 
     cdef public list cash
     cdef public float cash_available
-    cdef public sell_available
-    cdef public buy_available
-    cdef public time_index_max
+    cdef public object sell_available
+    cdef public object buy_available
+    cdef public object time_index_max
     cdef public list history
     cdef public dict static_balance
     cdef public dict today_trade
     cdef public dict today_orders
-    cdef public market_preset
+
     cdef public dict frozen
     cdef public list finishedOrderid
+
+    
+    cdef public object market_preset
     def __init__(
             self,
             user_cookie: str,
