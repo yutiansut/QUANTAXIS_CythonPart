@@ -72,7 +72,9 @@ cdef class QA_Order():
     cdef public str frequence
     cdef public int towards
     cdef public str code
-    cdef public str user
+    cdef public str user_cookie
+    cdef public float trade_amount
+    cdef public float cancel_amount
     cdef public str account_cookie
     cdef public str strategy
     cdef public str order_model
@@ -80,13 +82,18 @@ cdef class QA_Order():
     cdef public str amount_model
     cdef public str broker
     cdef public str order_id
+    cdef public str realorder_id
     cdef public list trade_id
     cdef public str _status
     cdef public object callback
     cdef public float commission_coeff
     cdef public float tax_coeff
     cdef public str exchange_id
-
+    cdef public float trade_price
+    cdef public str reason
+    cdef public str time_condition
+    cdef public dict exchange_code
+    
     def __init__(
             self,
             price=None,
@@ -99,7 +106,7 @@ cdef class QA_Order():
             frequence=None,
             towards=None,
             code=None,
-            user=None,
+            user_cookie=None,
             account_cookie=None,
             strategy=None,
             order_model=None,
@@ -129,7 +136,7 @@ cdef class QA_Order():
         - frequence 频率 (回测用 DAY/1min/5min/15min/30min/...)
         - towards 买卖方向
         - code  订单的品种
-        - user  订单发起者
+        - user_cookie  订单发起者
         - account_cookie 订单发起账户的标识
         - stratgy 策略号
         - order_model  委托方式(限价/市价/下一个bar/)  type str eg 'limit'
@@ -183,12 +190,11 @@ cdef class QA_Order():
         self.cancel_amount = 0                             # 撤销数量
         self.towards = towards                             # side
         self.code = code                                   # 委托证券代码
-        self.user = user                                   # 委托用户
+        self.user_cookie = user_cookie                                   # 委托用户
         self.market_type = market_type                     # 委托市场类别
         self.frequence = frequence                         # 委托所在的频率(回测用)
         self.account_cookie = account_cookie
-        self.strategy = strategy
-        self.type = market_type                            # see below
+        self.strategy = strategy                            # see below
         self.order_model = order_model
         self.amount_model = amount_model
         self.order_id = QA_util_random_with_topic(
@@ -231,7 +237,7 @@ cdef class QA_Order():
             self.amount,
             self.price,
             self.towards,
-            self.type,
+            self.market_type,
             self.order_id,
             self.account_cookie,
             self.status
@@ -518,10 +524,9 @@ cdef class QA_Order():
             self.market_type = order_dict['market_type']
             self.towards = order_dict['towards']
             self.code = order_dict['code']
-            self.user = order_dict['user']
+            self.user_cookie = order_dict['user_cookie']
             self.account_cookie = order_dict['account_cookie']
             self.strategy = order_dict['strategy']
-            self.type = order_dict['type']
             self.order_model = order_dict['order_model']
             self.amount_model = order_dict['amount_model']
             self.order_id = order_dict['order_id']

@@ -9,7 +9,7 @@ from pymongo import DESCENDING, ASCENDING
 from QUANTAXIS import __version__
 from QUANTAXIS.QAARP.market_preset import MARKET_PRESET
 from QUANTAXIS.QAEngine.QAEvent import QA_Worker
-from QUANTAXIS.QAMarket.QAOrder import QA_Order, QA_OrderQueue
+from QAOrder import QA_Order, QA_OrderQueue
 from QUANTAXIS.QASU.save_account import save_account, update_account
 from QUANTAXIS.QAUtil.QASetting import DATABASE
 from QUANTAXIS.QAUtil.QADate_trade import (

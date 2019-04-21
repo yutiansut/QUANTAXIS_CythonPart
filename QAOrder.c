@@ -835,7 +835,9 @@ struct __pyx_obj_7QAOrder_QA_Order {
   PyObject *frequence;
   int towards;
   PyObject *code;
-  PyObject *user;
+  PyObject *user_cookie;
+  float trade_amount;
+  float cancel_amount;
   PyObject *account_cookie;
   PyObject *strategy;
   PyObject *order_model;
@@ -843,16 +845,21 @@ struct __pyx_obj_7QAOrder_QA_Order {
   PyObject *amount_model;
   PyObject *broker;
   PyObject *order_id;
+  PyObject *realorder_id;
   PyObject *trade_id;
   PyObject *_status;
   PyObject *callback;
   float commission_coeff;
   float tax_coeff;
   PyObject *exchange_id;
+  float trade_price;
+  PyObject *reason;
+  PyObject *time_condition;
+  PyObject *exchange_code;
 };
 
 
-/* "QAOrder.pyx":547
+/* "QAOrder.pyx":552
  * 
  * 
  * cdef class QA_OrderQueue(): # also the order tree  what's the tree means?             # <<<<<<<<<<<<<<
@@ -1006,15 +1013,6 @@ static CYTHON_INLINE PyObject* __Pyx_PyObject_GetSlice(
         PyObject** py_start, PyObject** py_stop, PyObject** py_slice,
         int has_cstart, int has_cstop, int wraparound);
 
-/* PyObjectSetAttrStr.proto */
-#if CYTHON_USE_TYPE_SLOTS
-#define __Pyx_PyObject_DelAttrStr(o,n) __Pyx_PyObject_SetAttrStr(o, n, NULL)
-static CYTHON_INLINE int __Pyx_PyObject_SetAttrStr(PyObject* obj, PyObject* attr_name, PyObject* value);
-#else
-#define __Pyx_PyObject_DelAttrStr(o,n)   PyObject_DelAttr(o,n)
-#define __Pyx_PyObject_SetAttrStr(o,n,v) PyObject_SetAttr(o,n,v)
-#endif
-
 /* PyDictVersioning.proto */
 #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_TYPE_SLOTS
 #define __PYX_DICT_VERSION_INIT  ((PY_UINT64_T) -1)
@@ -1078,9 +1076,6 @@ static CYTHON_INLINE int __Pyx_PyUnicode_Equals(PyObject* s1, PyObject* s2, int 
 #define __Pyx_PyString_Equals __Pyx_PyBytes_Equals
 #endif
 
-/* PyIntCompare.proto */
-static CYTHON_INLINE PyObject* __Pyx_PyInt_EqObjC(PyObject *op1, PyObject *op2, long intval, long inplace);
-
 /* PyObjectCallNoArg.proto */
 #if CYTHON_COMPILING_IN_CPYTHON
 static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func);
@@ -1088,33 +1083,15 @@ static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func);
 #define __Pyx_PyObject_CallNoArg(func) __Pyx_PyObject_Call(func, __pyx_empty_tuple, NULL)
 #endif
 
-/* GetItemInt.proto */
-#define __Pyx_GetItemInt(o, i, type, is_signed, to_py_func, is_list, wraparound, boundscheck)\
-    (__Pyx_fits_Py_ssize_t(i, type, is_signed) ?\
-    __Pyx_GetItemInt_Fast(o, (Py_ssize_t)i, is_list, wraparound, boundscheck) :\
-    (is_list ? (PyErr_SetString(PyExc_IndexError, "list index out of range"), (PyObject*)NULL) :\
-               __Pyx_GetItemInt_Generic(o, to_py_func(i))))
-#define __Pyx_GetItemInt_List(o, i, type, is_signed, to_py_func, is_list, wraparound, boundscheck)\
-    (__Pyx_fits_Py_ssize_t(i, type, is_signed) ?\
-    __Pyx_GetItemInt_List_Fast(o, (Py_ssize_t)i, wraparound, boundscheck) :\
-    (PyErr_SetString(PyExc_IndexError, "list index out of range"), (PyObject*)NULL))
-static CYTHON_INLINE PyObject *__Pyx_GetItemInt_List_Fast(PyObject *o, Py_ssize_t i,
-                                                              int wraparound, int boundscheck);
-#define __Pyx_GetItemInt_Tuple(o, i, type, is_signed, to_py_func, is_list, wraparound, boundscheck)\
-    (__Pyx_fits_Py_ssize_t(i, type, is_signed) ?\
-    __Pyx_GetItemInt_Tuple_Fast(o, (Py_ssize_t)i, wraparound, boundscheck) :\
-    (PyErr_SetString(PyExc_IndexError, "tuple index out of range"), (PyObject*)NULL))
-static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Tuple_Fast(PyObject *o, Py_ssize_t i,
-                                                              int wraparound, int boundscheck);
-static PyObject *__Pyx_GetItemInt_Generic(PyObject *o, PyObject* j);
-static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Fast(PyObject *o, Py_ssize_t i,
-                                                     int is_list, int wraparound, int boundscheck);
-
-/* ObjectGetItem.proto */
-#if CYTHON_USE_TYPE_SLOTS
-static CYTHON_INLINE PyObject *__Pyx_PyObject_GetItem(PyObject *obj, PyObject* key);
+/* DictGetItem.proto */
+#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
+static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key);
+#define __Pyx_PyObject_Dict_GetItem(obj, name)\
+    (likely(PyDict_CheckExact(obj)) ?\
+     __Pyx_PyDict_GetItem(obj, name) : PyObject_GetItem(obj, name))
 #else
-#define __Pyx_PyObject_GetItem(obj, key)  PyObject_GetItem(obj, key)
+#define __Pyx_PyDict_GetItem(d, key) PyObject_GetItem(d, key)
+#define __Pyx_PyObject_Dict_GetItem(obj, name)  PyObject_GetItem(obj, name)
 #endif
 
 /* PySequenceContains.proto */
@@ -1211,16 +1188,17 @@ static int __Pyx__GetException(PyThreadState *tstate, PyObject **type, PyObject 
 static int __Pyx_GetException(PyObject **type, PyObject **value, PyObject **tb);
 #endif
 
-/* DictGetItem.proto */
-#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
-static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key);
-#define __Pyx_PyObject_Dict_GetItem(obj, name)\
-    (likely(PyDict_CheckExact(obj)) ?\
-     __Pyx_PyDict_GetItem(obj, name) : PyObject_GetItem(obj, name))
+/* PyObjectSetAttrStr.proto */
+#if CYTHON_USE_TYPE_SLOTS
+#define __Pyx_PyObject_DelAttrStr(o,n) __Pyx_PyObject_SetAttrStr(o, n, NULL)
+static CYTHON_INLINE int __Pyx_PyObject_SetAttrStr(PyObject* obj, PyObject* attr_name, PyObject* value);
 #else
-#define __Pyx_PyDict_GetItem(d, key) PyObject_GetItem(d, key)
-#define __Pyx_PyObject_Dict_GetItem(obj, name)  PyObject_GetItem(obj, name)
+#define __Pyx_PyObject_DelAttrStr(o,n)   PyObject_DelAttr(o,n)
+#define __Pyx_PyObject_SetAttrStr(o,n,v) PyObject_SetAttr(o,n,v)
 #endif
+
+/* PyIntCompare.proto */
+static CYTHON_INLINE PyObject* __Pyx_PyInt_EqObjC(PyObject *op1, PyObject *op2, long intval, long inplace);
 
 /* GetAttr.proto */
 static CYTHON_INLINE PyObject *__Pyx_GetAttr(PyObject *, PyObject *);
@@ -1288,6 +1266,28 @@ static PyObject *__Pyx_Import(PyObject *name, PyObject *from_list, int level);
 
 /* ImportFrom.proto */
 static PyObject* __Pyx_ImportFrom(PyObject* module, PyObject* name);
+
+/* GetItemInt.proto */
+#define __Pyx_GetItemInt(o, i, type, is_signed, to_py_func, is_list, wraparound, boundscheck)\
+    (__Pyx_fits_Py_ssize_t(i, type, is_signed) ?\
+    __Pyx_GetItemInt_Fast(o, (Py_ssize_t)i, is_list, wraparound, boundscheck) :\
+    (is_list ? (PyErr_SetString(PyExc_IndexError, "list index out of range"), (PyObject*)NULL) :\
+               __Pyx_GetItemInt_Generic(o, to_py_func(i))))
+#define __Pyx_GetItemInt_List(o, i, type, is_signed, to_py_func, is_list, wraparound, boundscheck)\
+    (__Pyx_fits_Py_ssize_t(i, type, is_signed) ?\
+    __Pyx_GetItemInt_List_Fast(o, (Py_ssize_t)i, wraparound, boundscheck) :\
+    (PyErr_SetString(PyExc_IndexError, "list index out of range"), (PyObject*)NULL))
+static CYTHON_INLINE PyObject *__Pyx_GetItemInt_List_Fast(PyObject *o, Py_ssize_t i,
+                                                              int wraparound, int boundscheck);
+#define __Pyx_GetItemInt_Tuple(o, i, type, is_signed, to_py_func, is_list, wraparound, boundscheck)\
+    (__Pyx_fits_Py_ssize_t(i, type, is_signed) ?\
+    __Pyx_GetItemInt_Tuple_Fast(o, (Py_ssize_t)i, wraparound, boundscheck) :\
+    (PyErr_SetString(PyExc_IndexError, "tuple index out of range"), (PyObject*)NULL))
+static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Tuple_Fast(PyObject *o, Py_ssize_t i,
+                                                              int wraparound, int boundscheck);
+static PyObject *__Pyx_GetItemInt_Generic(PyObject *o, PyObject* j);
+static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Fast(PyObject *o, Py_ssize_t i,
+                                                     int is_list, int wraparound, int boundscheck);
 
 /* HasAttr.proto */
 static CYTHON_INLINE int __Pyx_HasAttr(PyObject *, PyObject *);
@@ -1421,8 +1421,6 @@ static const char __pyx_k_main[] = "__main__";
 static const char __pyx_k_name[] = "__name__";
 static const char __pyx_k_self[] = "self.{}";
 static const char __pyx_k_test[] = "__test__";
-static const char __pyx_k_type[] = "type";
-static const char __pyx_k_user[] = "user";
 static const char __pyx_k_vars[] = "vars";
 static const char __pyx_k_Order[] = "Order";
 static const char __pyx_k_lower[] = "lower";
@@ -1494,6 +1492,7 @@ static const char __pyx_k_market_type[] = "market_type";
 static const char __pyx_k_order_model[] = "order_model";
 static const char __pyx_k_strategy_id[] = "strategy_id";
 static const char __pyx_k_trade_price[] = "trade_price";
+static const char __pyx_k_user_cookie[] = "user_cookie";
 static const char __pyx_k_volume_left[] = "volume_left";
 static const char __pyx_k_AMOUNT_MODEL[] = "AMOUNT_MODEL";
 static const char __pyx_k_ORDER_STATUS[] = "ORDER_STATUS";
@@ -1544,7 +1543,7 @@ static const char __pyx_k_QA_util_to_json_from_pandas[] = "QA_util_to_json_from_
 static const char __pyx_k_QUANTAXIS_QAUtil_QAParameter[] = "QUANTAXIS.QAUtil.QAParameter";
 static const char __pyx_k_QA_Order_realorder_id_datetime[] = "< QA_Order realorder_id {} datetime:{} code:{} amount:{} price:{} towards:{} btype:{} order_id:{} account:{} status:{} >";
 static const char __pyx_k_QAERROR_Wrong_for_get_None_type[] = "QAERROR Wrong for get None type while insert order to Queue";
-static const char __pyx_k_Incompatible_checksums_s_vs_0x43[] = "Incompatible checksums (%s vs 0x43fad51 = (_status, account_cookie, amount, amount_model, broker, callback, code, commission_coeff, date, datetime, exchange_id, frequence, market_type, money, order_id, order_model, price, sending_time, strategy, tax_coeff, towards, trade_id, trade_time, user))";
+static const char __pyx_k_Incompatible_checksums_s_vs_0x88[] = "Incompatible checksums (%s vs 0x886f3b4 = (_status, account_cookie, amount, amount_model, broker, callback, cancel_amount, code, commission_coeff, date, datetime, exchange_code, exchange_id, frequence, market_type, money, order_id, order_model, price, realorder_id, reason, sending_time, strategy, tax_coeff, time_condition, towards, trade_amount, trade_id, trade_price, trade_time, user_cookie))";
 static const char __pyx_k_Incompatible_checksums_s_vs_0xec[] = "Incompatible checksums (%s vs 0xec10c9d = (deal_list, order_list))";
 static PyObject *__pyx_kp_s_09_31_00;
 static PyObject *__pyx_n_s_AMOUNT_MODEL;
@@ -1557,7 +1556,7 @@ static PyObject *__pyx_n_s_DataFrame;
 static PyObject *__pyx_n_s_FAILED;
 static PyObject *__pyx_kp_s_Failed_to_tran_from_dict;
 static PyObject *__pyx_n_s_GFD;
-static PyObject *__pyx_kp_s_Incompatible_checksums_s_vs_0x43;
+static PyObject *__pyx_kp_s_Incompatible_checksums_s_vs_0x88;
 static PyObject *__pyx_kp_s_Incompatible_checksums_s_vs_0xec;
 static PyObject *__pyx_n_s_NEW;
 static PyObject *__pyx_n_s_NEXT;
@@ -1688,10 +1687,9 @@ static PyObject *__pyx_n_s_trade_amount;
 static PyObject *__pyx_n_s_trade_id;
 static PyObject *__pyx_n_s_trade_price;
 static PyObject *__pyx_n_s_trade_time;
-static PyObject *__pyx_n_s_type;
 static PyObject *__pyx_n_s_update;
 static PyObject *__pyx_n_s_upper;
-static PyObject *__pyx_n_s_user;
+static PyObject *__pyx_n_s_user_cookie;
 static PyObject *__pyx_n_s_user_id;
 static PyObject *__pyx_n_s_values;
 static PyObject *__pyx_n_s_vars;
@@ -1699,7 +1697,7 @@ static PyObject *__pyx_n_s_volume;
 static PyObject *__pyx_n_s_volume_condition;
 static PyObject *__pyx_n_s_volume_left;
 static PyObject *__pyx_n_s_volume_orign;
-static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_price, PyObject *__pyx_v_date, PyObject *__pyx_v_datetime, PyObject *__pyx_v_sending_time, PyObject *__pyx_v_trade_time, PyObject *__pyx_v_amount, PyObject *__pyx_v_market_type, PyObject *__pyx_v_frequence, PyObject *__pyx_v_towards, PyObject *__pyx_v_code, PyObject *__pyx_v_user, PyObject *__pyx_v_account_cookie, PyObject *__pyx_v_strategy, PyObject *__pyx_v_order_model, PyObject *__pyx_v_money, PyObject *__pyx_v_amount_model, PyObject *__pyx_v_broker, PyObject *__pyx_v_order_id, PyObject *__pyx_v_trade_id, PyObject *__pyx_v__status, PyObject *__pyx_v_callback, PyObject *__pyx_v_commission_coeff, PyObject *__pyx_v_tax_coeff, PyObject *__pyx_v_exchange_id); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_price, PyObject *__pyx_v_date, PyObject *__pyx_v_datetime, PyObject *__pyx_v_sending_time, PyObject *__pyx_v_trade_time, PyObject *__pyx_v_amount, PyObject *__pyx_v_market_type, PyObject *__pyx_v_frequence, PyObject *__pyx_v_towards, PyObject *__pyx_v_code, PyObject *__pyx_v_user_cookie, PyObject *__pyx_v_account_cookie, PyObject *__pyx_v_strategy, PyObject *__pyx_v_order_model, PyObject *__pyx_v_money, PyObject *__pyx_v_amount_model, PyObject *__pyx_v_broker, PyObject *__pyx_v_order_id, PyObject *__pyx_v_trade_id, PyObject *__pyx_v__status, PyObject *__pyx_v_callback, PyObject *__pyx_v_commission_coeff, PyObject *__pyx_v_tax_coeff, PyObject *__pyx_v_exchange_id); /* proto */
 static PyObject *__pyx_pf_7QAOrder_8QA_Order_14pending_amount___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_7QAOrder_8QA_Order_2__repr__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
@@ -1746,9 +1744,13 @@ static int __pyx_pf_7QAOrder_8QA_Order_7towards_2__set__(struct __pyx_obj_7QAOrd
 static PyObject *__pyx_pf_7QAOrder_8QA_Order_4code___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
 static int __pyx_pf_7QAOrder_8QA_Order_4code_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
 static int __pyx_pf_7QAOrder_8QA_Order_4code_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_7QAOrder_8QA_Order_4user___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
-static int __pyx_pf_7QAOrder_8QA_Order_4user_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
-static int __pyx_pf_7QAOrder_8QA_Order_4user_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_11user_cookie___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order_11user_cookie_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order_11user_cookie_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade_amount___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order_12trade_amount_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_13cancel_amount___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order_13cancel_amount_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
 static PyObject *__pyx_pf_7QAOrder_8QA_Order_14account_cookie___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
 static int __pyx_pf_7QAOrder_8QA_Order_14account_cookie_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
 static int __pyx_pf_7QAOrder_8QA_Order_14account_cookie_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
@@ -1769,6 +1771,9 @@ static int __pyx_pf_7QAOrder_8QA_Order_6broker_4__del__(struct __pyx_obj_7QAOrde
 static PyObject *__pyx_pf_7QAOrder_8QA_Order_8order_id___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
 static int __pyx_pf_7QAOrder_8QA_Order_8order_id_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
 static int __pyx_pf_7QAOrder_8QA_Order_8order_id_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_12realorder_id___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order_12realorder_id_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order_12realorder_id_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_7QAOrder_8QA_Order_8trade_id___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
 static int __pyx_pf_7QAOrder_8QA_Order_8trade_id_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
 static int __pyx_pf_7QAOrder_8QA_Order_8trade_id_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
@@ -1785,6 +1790,17 @@ static int __pyx_pf_7QAOrder_8QA_Order_9tax_coeff_2__set__(struct __pyx_obj_7QAO
 static PyObject *__pyx_pf_7QAOrder_8QA_Order_11exchange_id___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
 static int __pyx_pf_7QAOrder_8QA_Order_11exchange_id_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
 static int __pyx_pf_7QAOrder_8QA_Order_11exchange_id_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_11trade_price___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order_11trade_price_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_6reason___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order_6reason_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order_6reason_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_14time_condition___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order_14time_condition_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order_14time_condition_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_13exchange_code___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order_13exchange_code_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static int __pyx_pf_7QAOrder_8QA_Order_13exchange_code_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_7QAOrder_8QA_Order_36__reduce_cython__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_7QAOrder_8QA_Order_38__setstate_cython__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v___pyx_state); /* proto */
 static int __pyx_pf_7QAOrder_13QA_OrderQueue___init__(struct __pyx_obj_7QAOrder_QA_OrderQueue *__pyx_v_self); /* proto */
@@ -1820,7 +1836,7 @@ static PyObject *__pyx_float_0_00025;
 static PyObject *__pyx_int_0;
 static PyObject *__pyx_int_1;
 static PyObject *__pyx_int_10;
-static PyObject *__pyx_int_71282001;
+static PyObject *__pyx_int_143061940;
 static PyObject *__pyx_int_247532701;
 static PyObject *__pyx_k_;
 static PyObject *__pyx_k__2;
@@ -1831,8 +1847,8 @@ static PyObject *__pyx_codeobj__8;
 static PyObject *__pyx_codeobj__10;
 /* Late includes */
 
-/* "QAOrder.pyx":90
- *     cdef public str exchange_id
+/* "QAOrder.pyx":97
+ *     cdef public dict exchange_code
  * 
  *     def __init__(             # <<<<<<<<<<<<<<
  *             self,
@@ -1841,7 +1857,7 @@ static PyObject *__pyx_codeobj__10;
 
 /* Python wrapper */
 static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static char __pyx_doc_7QAOrder_8QA_Order___init__[] = "\n\n\n\n\n        QA_Order \345\257\271\350\261\241\350\241\250\347\244\272\344\270\200\344\270\252\345\247\224\346\211\230\344\270\232\345\212\241\357\274\214 \346\234\211\345\246\202\344\270\213\345\255\227\346\256\265\n        - price \345\247\224\346\211\230\344\273\267\346\240\274 (\351\231\220\344\273\267\345\215\225\347\224\250)\n        - date \345\247\224\346\211\230\346\227\245\346\234\237 (\344\270\200\350\210\254\346\227\245\347\272\277\347\272\247\345\210\253\345\233\236\346\265\213\347\224\250)\n        - datetime \345\275\223\345\211\215\346\227\266\351\227\264 (\345\210\206\351\222\237\347\272\277\347\272\247\345\210\253\345\222\214\345\256\236\346\227\266\347\224\250)\n        - sending_time \345\247\224\346\211\230\346\227\266\351\227\264 (\345\210\206\351\222\237\347\272\277\347\272\247\345\210\253\345\222\214\345\256\236\346\227\266\347\224\250)\n        - trade_time \346\210\220\344\272\244\346\227\266\351\227\264 [list] (\345\210\206\351\222\237/\346\227\245\347\272\277/\345\256\236\347\233\230\346\227\266\347\224\250, \344\270\200\347\254\224\350\256\242\345\215\225\345\244\232\346\254\241\346\210\220\344\272\244\344\274\232\344\270\215\346\226\255append\350\277\233\345\216\273)\n        - amount \345\247\224\346\211\230\346\225\260\351\207\217\n        - frequence \351\242\221\347\216\207 (\345\233\236\346\265\213\347\224\250 DAY/1min/5min/15min/30min/...)\n        - towards \344\271\260\345\215\226\346\226\271\345\220\221\n        - code  \350\256\242\345\215\225\347\232\204\345\223\201\347\247\215\n        - user  \350\256\242\345\215\225\345\217\221\350\265\267\350\200\205\n        - account_cookie \350\256\242\345\215\225\345\217\221\350\265\267\350\264\246\346\210\267\347\232\204\346\240\207\350\257\206\n        - stratgy \347\255\226\347\225\245\345\217\267\n        - order_model  \345\247\224\346\211\230\346\226\271\345\274\217(\351\231\220\344\273\267/\345\270\202\344\273\267/\344\270\213\344\270\200\344\270\252bar/)  type str eg 'lim""it'\n        - money  \350\256\242\345\215\225\351\207\221\351\242\235\n        - amount_model \345\247\224\346\211\230\351\207\217\346\250\241\345\274\217(\346\214\211\351\207\217\345\247\224\346\211\230/\346\214\211\346\200\273\346\210\220\344\272\244\351\242\235\345\247\224\346\211\230) type str 'by_amount'\n        - order_id   \345\247\224\346\211\230\345\215\225id\n        - trade_id   \346\210\220\344\272\244\345\215\225id\n        - _status    \345\206\205\351\203\250\347\273\264\346\212\244\347\232\204\350\256\242\345\215\225\347\212\266\346\200\201\n        - callback   \345\275\223\350\256\242\345\215\225\347\212\266\346\200\201\346\224\271\345\217\230\347\232\204\346\227\266\345\200\231 \344\270\273\345\212\250\345\233\236\350\260\203\347\232\204\345\207\275\346\225\260(\345\217\257\344\273\245\347\220\206\350\247\243\344\270\272\350\207\252\345\212\250\346\211\247\350\241\214\347\232\204OnOrderAction)\n        - commission_coeff \346\211\213\347\273\255\350\264\271\347\263\273\346\225\260\n        - tax_coeff  \345\215\260\350\212\261\347\250\216\347\263\273\346\225\260(\350\202\241\347\245\250)\n        - exchange_id  \344\272\244\346\230\223\346\211\200id (\344\270\200\350\210\254\347\224\250\344\272\216\345\256\236\347\233\230\346\234\237\350\264\247)\n\n        \n        :param args: type tuple\n        :param kwargs: type dict\n\n        # 2018-08-12 \346\212\212order\345\217\230\346\210\220\344\270\200\344\270\252\347\212\266\346\200\201\346\234\272>\n        # \344\273\245\345\211\215\347\232\204order\345\217\252\346\230\257\344\270\200\344\270\252\344\277\241\346\201\257\346\211\277\350\275\275\347\232\204\345\267\245\345\205\267,\347\216\260\345\234\250\351\234\200\350\246\201\350\256\251\344\273\226\345\205\267\345\244\207\347\212\266\346\200\201\347\232\204\346\226\271\346\263\225\n\n        NEW = 100\n        SUCCESS_ALL = 200\n        SUCCESS_PART = 203 # success_part \346\230\257\351\203\250\345\210\206\346\210\220\344\272\244 \344\270""\200\344\270\252\344\270\255\351\227\264\347\212\266\346\200\201 \345\211\251\344\275\231\347\232\204\350\256\242\345\215\225\350\277\230\345\234\250\345\247\224\346\211\230\351\230\237\345\210\227\344\270\255\n        QUEUED = 300  # queued \347\224\250\344\272\216\350\241\250\347\244\272\345\234\250order_queue\344\270\255 \345\256\236\351\231\205\350\241\250\350\276\276\347\232\204\346\204\217\346\200\235\346\230\257\350\256\242\345\215\225\345\255\230\346\264\273 \345\276\205\346\210\220\344\272\244\n        CANCEL = 400\n        CANCEL_PART = 402 # cancel_part\346\230\257\351\203\250\345\210\206\346\222\244\345\215\225(\345\217\212 \344\270\213\345\215\225\345\220\216\346\210\220\344\272\244\344\272\206\344\270\200\351\203\250\345\210\206 \345\211\251\344\275\231\347\232\204\350\242\253\346\222\244\345\215\225 \350\277\231\346\230\257\344\270\200\344\270\252\346\234\200\347\273\210\347\212\266\346\200\201)\n        SETTLED = 500\n        FAILED = 600\n        ";
+static char __pyx_doc_7QAOrder_8QA_Order___init__[] = "\n\n\n\n\n        QA_Order \345\257\271\350\261\241\350\241\250\347\244\272\344\270\200\344\270\252\345\247\224\346\211\230\344\270\232\345\212\241\357\274\214 \346\234\211\345\246\202\344\270\213\345\255\227\346\256\265\n        - price \345\247\224\346\211\230\344\273\267\346\240\274 (\351\231\220\344\273\267\345\215\225\347\224\250)\n        - date \345\247\224\346\211\230\346\227\245\346\234\237 (\344\270\200\350\210\254\346\227\245\347\272\277\347\272\247\345\210\253\345\233\236\346\265\213\347\224\250)\n        - datetime \345\275\223\345\211\215\346\227\266\351\227\264 (\345\210\206\351\222\237\347\272\277\347\272\247\345\210\253\345\222\214\345\256\236\346\227\266\347\224\250)\n        - sending_time \345\247\224\346\211\230\346\227\266\351\227\264 (\345\210\206\351\222\237\347\272\277\347\272\247\345\210\253\345\222\214\345\256\236\346\227\266\347\224\250)\n        - trade_time \346\210\220\344\272\244\346\227\266\351\227\264 [list] (\345\210\206\351\222\237/\346\227\245\347\272\277/\345\256\236\347\233\230\346\227\266\347\224\250, \344\270\200\347\254\224\350\256\242\345\215\225\345\244\232\346\254\241\346\210\220\344\272\244\344\274\232\344\270\215\346\226\255append\350\277\233\345\216\273)\n        - amount \345\247\224\346\211\230\346\225\260\351\207\217\n        - frequence \351\242\221\347\216\207 (\345\233\236\346\265\213\347\224\250 DAY/1min/5min/15min/30min/...)\n        - towards \344\271\260\345\215\226\346\226\271\345\220\221\n        - code  \350\256\242\345\215\225\347\232\204\345\223\201\347\247\215\n        - user_cookie  \350\256\242\345\215\225\345\217\221\350\265\267\350\200\205\n        - account_cookie \350\256\242\345\215\225\345\217\221\350\265\267\350\264\246\346\210\267\347\232\204\346\240\207\350\257\206\n        - stratgy \347\255\226\347\225\245\345\217\267\n        - order_model  \345\247\224\346\211\230\346\226\271\345\274\217(\351\231\220\344\273\267/\345\270\202\344\273\267/\344\270\213\344\270\200\344\270\252bar/)  type str ""eg 'limit'\n        - money  \350\256\242\345\215\225\351\207\221\351\242\235\n        - amount_model \345\247\224\346\211\230\351\207\217\346\250\241\345\274\217(\346\214\211\351\207\217\345\247\224\346\211\230/\346\214\211\346\200\273\346\210\220\344\272\244\351\242\235\345\247\224\346\211\230) type str 'by_amount'\n        - order_id   \345\247\224\346\211\230\345\215\225id\n        - trade_id   \346\210\220\344\272\244\345\215\225id\n        - _status    \345\206\205\351\203\250\347\273\264\346\212\244\347\232\204\350\256\242\345\215\225\347\212\266\346\200\201\n        - callback   \345\275\223\350\256\242\345\215\225\347\212\266\346\200\201\346\224\271\345\217\230\347\232\204\346\227\266\345\200\231 \344\270\273\345\212\250\345\233\236\350\260\203\347\232\204\345\207\275\346\225\260(\345\217\257\344\273\245\347\220\206\350\247\243\344\270\272\350\207\252\345\212\250\346\211\247\350\241\214\347\232\204OnOrderAction)\n        - commission_coeff \346\211\213\347\273\255\350\264\271\347\263\273\346\225\260\n        - tax_coeff  \345\215\260\350\212\261\347\250\216\347\263\273\346\225\260(\350\202\241\347\245\250)\n        - exchange_id  \344\272\244\346\230\223\346\211\200id (\344\270\200\350\210\254\347\224\250\344\272\216\345\256\236\347\233\230\346\234\237\350\264\247)\n\n        \n        :param args: type tuple\n        :param kwargs: type dict\n\n        # 2018-08-12 \346\212\212order\345\217\230\346\210\220\344\270\200\344\270\252\347\212\266\346\200\201\346\234\272>\n        # \344\273\245\345\211\215\347\232\204order\345\217\252\346\230\257\344\270\200\344\270\252\344\277\241\346\201\257\346\211\277\350\275\275\347\232\204\345\267\245\345\205\267,\347\216\260\345\234\250\351\234\200\350\246\201\350\256\251\344\273\226\345\205\267\345\244\207\347\212\266\346\200\201\347\232\204\346\226\271\346\263\225\n\n        NEW = 100\n        SUCCESS_ALL = 200\n        SUCCESS_PART = 203 # success_part \346\230\257\351\203\250\345\210\206\346\210\220\344\272\244 \344""\270\200\344\270\252\344\270\255\351\227\264\347\212\266\346\200\201 \345\211\251\344\275\231\347\232\204\350\256\242\345\215\225\350\277\230\345\234\250\345\247\224\346\211\230\351\230\237\345\210\227\344\270\255\n        QUEUED = 300  # queued \347\224\250\344\272\216\350\241\250\347\244\272\345\234\250order_queue\344\270\255 \345\256\236\351\231\205\350\241\250\350\276\276\347\232\204\346\204\217\346\200\235\346\230\257\350\256\242\345\215\225\345\255\230\346\264\273 \345\276\205\346\210\220\344\272\244\n        CANCEL = 400\n        CANCEL_PART = 402 # cancel_part\346\230\257\351\203\250\345\210\206\346\222\244\345\215\225(\345\217\212 \344\270\213\345\215\225\345\220\216\346\210\220\344\272\244\344\272\206\344\270\200\351\203\250\345\210\206 \345\211\251\344\275\231\347\232\204\350\242\253\346\222\244\345\215\225 \350\277\231\346\230\257\344\270\200\344\270\252\346\234\200\347\273\210\347\212\266\346\200\201)\n        SETTLED = 500\n        FAILED = 600\n        ";
 #if CYTHON_COMPILING_IN_CPYTHON
 struct wrapperbase __pyx_wrapperbase_7QAOrder_8QA_Order___init__;
 #endif
@@ -1856,7 +1872,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
   PyObject *__pyx_v_frequence = 0;
   PyObject *__pyx_v_towards = 0;
   PyObject *__pyx_v_code = 0;
-  PyObject *__pyx_v_user = 0;
+  PyObject *__pyx_v_user_cookie = 0;
   PyObject *__pyx_v_account_cookie = 0;
   PyObject *__pyx_v_strategy = 0;
   PyObject *__pyx_v_order_model = 0;
@@ -1874,10 +1890,10 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__init__ (wrapper)", 0);
   {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_price,&__pyx_n_s_date,&__pyx_n_s_datetime,&__pyx_n_s_sending_time,&__pyx_n_s_trade_time,&__pyx_n_s_amount,&__pyx_n_s_market_type,&__pyx_n_s_frequence,&__pyx_n_s_towards,&__pyx_n_s_code,&__pyx_n_s_user,&__pyx_n_s_account_cookie,&__pyx_n_s_strategy,&__pyx_n_s_order_model,&__pyx_n_s_money,&__pyx_n_s_amount_model,&__pyx_n_s_broker,&__pyx_n_s_order_id,&__pyx_n_s_trade_id,&__pyx_n_s_status,&__pyx_n_s_callback,&__pyx_n_s_commission_coeff,&__pyx_n_s_tax_coeff,&__pyx_n_s_exchange_id,0};
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_price,&__pyx_n_s_date,&__pyx_n_s_datetime,&__pyx_n_s_sending_time,&__pyx_n_s_trade_time,&__pyx_n_s_amount,&__pyx_n_s_market_type,&__pyx_n_s_frequence,&__pyx_n_s_towards,&__pyx_n_s_code,&__pyx_n_s_user_cookie,&__pyx_n_s_account_cookie,&__pyx_n_s_strategy,&__pyx_n_s_order_model,&__pyx_n_s_money,&__pyx_n_s_amount_model,&__pyx_n_s_broker,&__pyx_n_s_order_id,&__pyx_n_s_trade_id,&__pyx_n_s_status,&__pyx_n_s_callback,&__pyx_n_s_commission_coeff,&__pyx_n_s_tax_coeff,&__pyx_n_s_exchange_id,0};
     PyObject* values[24] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
-    /* "QAOrder.pyx":92
+    /* "QAOrder.pyx":99
  *     def __init__(
  *             self,
  *             price=None,             # <<<<<<<<<<<<<<
@@ -1886,7 +1902,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
  */
     values[0] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":93
+    /* "QAOrder.pyx":100
  *             self,
  *             price=None,
  *             date=None,             # <<<<<<<<<<<<<<
@@ -1895,7 +1911,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
  */
     values[1] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":94
+    /* "QAOrder.pyx":101
  *             price=None,
  *             date=None,
  *             datetime=None,             # <<<<<<<<<<<<<<
@@ -1904,7 +1920,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
  */
     values[2] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":95
+    /* "QAOrder.pyx":102
  *             date=None,
  *             datetime=None,
  *             sending_time=None,             # <<<<<<<<<<<<<<
@@ -1913,7 +1929,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
  */
     values[3] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":96
+    /* "QAOrder.pyx":103
  *             datetime=None,
  *             sending_time=None,
  *             trade_time=False,             # <<<<<<<<<<<<<<
@@ -1923,7 +1939,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
     values[4] = ((PyObject *)Py_False);
     values[5] = ((PyObject *)__pyx_int_0);
 
-    /* "QAOrder.pyx":98
+    /* "QAOrder.pyx":105
  *             trade_time=False,
  *             amount=0,
  *             market_type=None,             # <<<<<<<<<<<<<<
@@ -1932,7 +1948,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
  */
     values[6] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":99
+    /* "QAOrder.pyx":106
  *             amount=0,
  *             market_type=None,
  *             frequence=None,             # <<<<<<<<<<<<<<
@@ -1941,44 +1957,44 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
  */
     values[7] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":100
+    /* "QAOrder.pyx":107
  *             market_type=None,
  *             frequence=None,
  *             towards=None,             # <<<<<<<<<<<<<<
  *             code=None,
- *             user=None,
+ *             user_cookie=None,
  */
     values[8] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":101
+    /* "QAOrder.pyx":108
  *             frequence=None,
  *             towards=None,
  *             code=None,             # <<<<<<<<<<<<<<
- *             user=None,
+ *             user_cookie=None,
  *             account_cookie=None,
  */
     values[9] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":102
+    /* "QAOrder.pyx":109
  *             towards=None,
  *             code=None,
- *             user=None,             # <<<<<<<<<<<<<<
+ *             user_cookie=None,             # <<<<<<<<<<<<<<
  *             account_cookie=None,
  *             strategy=None,
  */
     values[10] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":103
+    /* "QAOrder.pyx":110
  *             code=None,
- *             user=None,
+ *             user_cookie=None,
  *             account_cookie=None,             # <<<<<<<<<<<<<<
  *             strategy=None,
  *             order_model=None,
  */
     values[11] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":104
- *             user=None,
+    /* "QAOrder.pyx":111
+ *             user_cookie=None,
  *             account_cookie=None,
  *             strategy=None,             # <<<<<<<<<<<<<<
  *             order_model=None,
@@ -1986,7 +2002,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
  */
     values[12] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":105
+    /* "QAOrder.pyx":112
  *             account_cookie=None,
  *             strategy=None,
  *             order_model=None,             # <<<<<<<<<<<<<<
@@ -1995,7 +2011,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
  */
     values[13] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":106
+    /* "QAOrder.pyx":113
  *             strategy=None,
  *             order_model=None,
  *             money=None,             # <<<<<<<<<<<<<<
@@ -2005,7 +2021,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
     values[14] = ((PyObject *)Py_None);
     values[15] = __pyx_k_;
 
-    /* "QAOrder.pyx":108
+    /* "QAOrder.pyx":115
  *             money=None,
  *             amount_model=AMOUNT_MODEL.BY_AMOUNT,
  *             broker=None,             # <<<<<<<<<<<<<<
@@ -2014,7 +2030,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
  */
     values[16] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":109
+    /* "QAOrder.pyx":116
  *             amount_model=AMOUNT_MODEL.BY_AMOUNT,
  *             broker=None,
  *             order_id=None,             # <<<<<<<<<<<<<<
@@ -2023,7 +2039,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
  */
     values[17] = ((PyObject *)Py_None);
 
-    /* "QAOrder.pyx":110
+    /* "QAOrder.pyx":117
  *             broker=None,
  *             order_id=None,
  *             trade_id=False,             # <<<<<<<<<<<<<<
@@ -2033,7 +2049,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
     values[18] = ((PyObject *)Py_False);
     values[19] = __pyx_k__2;
 
-    /* "QAOrder.pyx":112
+    /* "QAOrder.pyx":119
  *             trade_id=False,
  *             _status=ORDER_STATUS.NEW,
  *             callback=False,             # <<<<<<<<<<<<<<
@@ -2044,7 +2060,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
     values[21] = ((PyObject *)__pyx_float_0_00025);
     values[22] = ((PyObject *)__pyx_float_0_001);
 
-    /* "QAOrder.pyx":115
+    /* "QAOrder.pyx":122
  *             commission_coeff=0.00025,
  *             tax_coeff=0.001,
  *             exchange_id=None             # <<<<<<<<<<<<<<
@@ -2171,7 +2187,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
         CYTHON_FALLTHROUGH;
         case 10:
         if (kw_args > 0) {
-          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_user);
+          PyObject* value = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_user_cookie);
           if (value) { values[10] = value; kw_args--; }
         }
         CYTHON_FALLTHROUGH;
@@ -2254,7 +2270,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__init__") < 0)) __PYX_ERR(0, 90, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__init__") < 0)) __PYX_ERR(0, 97, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -2320,7 +2336,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
     __pyx_v_frequence = values[7];
     __pyx_v_towards = values[8];
     __pyx_v_code = values[9];
-    __pyx_v_user = values[10];
+    __pyx_v_user_cookie = values[10];
     __pyx_v_account_cookie = values[11];
     __pyx_v_strategy = values[12];
     __pyx_v_order_model = values[13];
@@ -2337,16 +2353,16 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__init__", 0, 0, 24, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 90, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__init__", 0, 0, 24, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 97, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("QAOrder.QA_Order.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_7QAOrder_8QA_Order___init__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self), __pyx_v_price, __pyx_v_date, __pyx_v_datetime, __pyx_v_sending_time, __pyx_v_trade_time, __pyx_v_amount, __pyx_v_market_type, __pyx_v_frequence, __pyx_v_towards, __pyx_v_code, __pyx_v_user, __pyx_v_account_cookie, __pyx_v_strategy, __pyx_v_order_model, __pyx_v_money, __pyx_v_amount_model, __pyx_v_broker, __pyx_v_order_id, __pyx_v_trade_id, __pyx_v__status, __pyx_v_callback, __pyx_v_commission_coeff, __pyx_v_tax_coeff, __pyx_v_exchange_id);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order___init__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self), __pyx_v_price, __pyx_v_date, __pyx_v_datetime, __pyx_v_sending_time, __pyx_v_trade_time, __pyx_v_amount, __pyx_v_market_type, __pyx_v_frequence, __pyx_v_towards, __pyx_v_code, __pyx_v_user_cookie, __pyx_v_account_cookie, __pyx_v_strategy, __pyx_v_order_model, __pyx_v_money, __pyx_v_amount_model, __pyx_v_broker, __pyx_v_order_id, __pyx_v_trade_id, __pyx_v__status, __pyx_v_callback, __pyx_v_commission_coeff, __pyx_v_tax_coeff, __pyx_v_exchange_id);
 
-  /* "QAOrder.pyx":90
- *     cdef public str exchange_id
+  /* "QAOrder.pyx":97
+ *     cdef public dict exchange_code
  * 
  *     def __init__(             # <<<<<<<<<<<<<<
  *             self,
@@ -2358,7 +2374,7 @@ static int __pyx_pw_7QAOrder_8QA_Order_1__init__(PyObject *__pyx_v_self, PyObjec
   return __pyx_r;
 }
 
-static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_price, PyObject *__pyx_v_date, PyObject *__pyx_v_datetime, PyObject *__pyx_v_sending_time, PyObject *__pyx_v_trade_time, PyObject *__pyx_v_amount, PyObject *__pyx_v_market_type, PyObject *__pyx_v_frequence, PyObject *__pyx_v_towards, PyObject *__pyx_v_code, PyObject *__pyx_v_user, PyObject *__pyx_v_account_cookie, PyObject *__pyx_v_strategy, PyObject *__pyx_v_order_model, PyObject *__pyx_v_money, PyObject *__pyx_v_amount_model, PyObject *__pyx_v_broker, PyObject *__pyx_v_order_id, PyObject *__pyx_v_trade_id, PyObject *__pyx_v__status, PyObject *__pyx_v_callback, PyObject *__pyx_v_commission_coeff, PyObject *__pyx_v_tax_coeff, PyObject *__pyx_v_exchange_id) {
+static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_price, PyObject *__pyx_v_date, PyObject *__pyx_v_datetime, PyObject *__pyx_v_sending_time, PyObject *__pyx_v_trade_time, PyObject *__pyx_v_amount, PyObject *__pyx_v_market_type, PyObject *__pyx_v_frequence, PyObject *__pyx_v_towards, PyObject *__pyx_v_code, PyObject *__pyx_v_user_cookie, PyObject *__pyx_v_account_cookie, PyObject *__pyx_v_strategy, PyObject *__pyx_v_order_model, PyObject *__pyx_v_money, PyObject *__pyx_v_amount_model, PyObject *__pyx_v_broker, PyObject *__pyx_v_order_id, PyObject *__pyx_v_trade_id, PyObject *__pyx_v__status, PyObject *__pyx_v_callback, PyObject *__pyx_v_commission_coeff, PyObject *__pyx_v_tax_coeff, PyObject *__pyx_v_exchange_id) {
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   float __pyx_t_1;
@@ -2372,17 +2388,17 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("__init__", 0);
 
-  /* "QAOrder.pyx":163
+  /* "QAOrder.pyx":170
  *         '''
  * 
  *         self.price = price             # <<<<<<<<<<<<<<
  *         self.datetime = None
  * 
  */
-  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_price); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 163, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_price); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 170, __pyx_L1_error)
   __pyx_v_self->price = __pyx_t_1;
 
-  /* "QAOrder.pyx":164
+  /* "QAOrder.pyx":171
  * 
  *         self.price = price
  *         self.datetime = None             # <<<<<<<<<<<<<<
@@ -2395,7 +2411,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __Pyx_DECREF(__pyx_v_self->datetime);
   __pyx_v_self->datetime = ((PyObject*)Py_None);
 
-  /* "QAOrder.pyx":167
+  /* "QAOrder.pyx":174
  * 
  *         # todo  Util
  *         if datetime is None and date is not None:             # <<<<<<<<<<<<<<
@@ -2415,14 +2431,14 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_L4_bool_binop_done:;
   if (__pyx_t_2) {
 
-    /* "QAOrder.pyx":168
+    /* "QAOrder.pyx":175
  *         # todo  Util
  *         if datetime is None and date is not None:
  *             self.date = date             # <<<<<<<<<<<<<<
  *             self.datetime = '{} 09:31:00'.format(self.date)
  *         elif date is None and datetime is not None:
  */
-    if (!(likely(PyString_CheckExact(__pyx_v_date))||((__pyx_v_date) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_date)->tp_name), 0))) __PYX_ERR(0, 168, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_v_date))||((__pyx_v_date) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_date)->tp_name), 0))) __PYX_ERR(0, 175, __pyx_L1_error)
     __pyx_t_5 = __pyx_v_date;
     __Pyx_INCREF(__pyx_t_5);
     __Pyx_GIVEREF(__pyx_t_5);
@@ -2431,14 +2447,14 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
     __pyx_v_self->date = ((PyObject*)__pyx_t_5);
     __pyx_t_5 = 0;
 
-    /* "QAOrder.pyx":169
+    /* "QAOrder.pyx":176
  *         if datetime is None and date is not None:
  *             self.date = date
  *             self.datetime = '{} 09:31:00'.format(self.date)             # <<<<<<<<<<<<<<
  *         elif date is None and datetime is not None:
  *             self.date = datetime[0:10]
  */
-    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_09_31_00, __pyx_n_s_format); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 169, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_09_31_00, __pyx_n_s_format); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 176, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __pyx_t_7 = NULL;
     if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_6))) {
@@ -2452,17 +2468,17 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
     }
     __pyx_t_5 = (__pyx_t_7) ? __Pyx_PyObject_Call2Args(__pyx_t_6, __pyx_t_7, __pyx_v_self->date) : __Pyx_PyObject_CallOneArg(__pyx_t_6, __pyx_v_self->date);
     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 169, __pyx_L1_error)
+    if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 176, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    if (!(likely(PyString_CheckExact(__pyx_t_5))||((__pyx_t_5) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_5)->tp_name), 0))) __PYX_ERR(0, 169, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_t_5))||((__pyx_t_5) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_5)->tp_name), 0))) __PYX_ERR(0, 176, __pyx_L1_error)
     __Pyx_GIVEREF(__pyx_t_5);
     __Pyx_GOTREF(__pyx_v_self->datetime);
     __Pyx_DECREF(__pyx_v_self->datetime);
     __pyx_v_self->datetime = ((PyObject*)__pyx_t_5);
     __pyx_t_5 = 0;
 
-    /* "QAOrder.pyx":167
+    /* "QAOrder.pyx":174
  * 
  *         # todo  Util
  *         if datetime is None and date is not None:             # <<<<<<<<<<<<<<
@@ -2472,7 +2488,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
     goto __pyx_L3;
   }
 
-  /* "QAOrder.pyx":170
+  /* "QAOrder.pyx":177
  *             self.date = date
  *             self.datetime = '{} 09:31:00'.format(self.date)
  *         elif date is None and datetime is not None:             # <<<<<<<<<<<<<<
@@ -2492,30 +2508,30 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_L6_bool_binop_done:;
   if (__pyx_t_2) {
 
-    /* "QAOrder.pyx":171
+    /* "QAOrder.pyx":178
  *             self.datetime = '{} 09:31:00'.format(self.date)
  *         elif date is None and datetime is not None:
  *             self.date = datetime[0:10]             # <<<<<<<<<<<<<<
  *             self.datetime = datetime
  *         elif date is not None and datetime is not None:
  */
-    __pyx_t_5 = __Pyx_PyObject_GetSlice(__pyx_v_datetime, 0, 10, NULL, NULL, &__pyx_slice__3, 1, 1, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 171, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_PyObject_GetSlice(__pyx_v_datetime, 0, 10, NULL, NULL, &__pyx_slice__3, 1, 1, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 178, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
-    if (!(likely(PyString_CheckExact(__pyx_t_5))||((__pyx_t_5) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_5)->tp_name), 0))) __PYX_ERR(0, 171, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_t_5))||((__pyx_t_5) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_5)->tp_name), 0))) __PYX_ERR(0, 178, __pyx_L1_error)
     __Pyx_GIVEREF(__pyx_t_5);
     __Pyx_GOTREF(__pyx_v_self->date);
     __Pyx_DECREF(__pyx_v_self->date);
     __pyx_v_self->date = ((PyObject*)__pyx_t_5);
     __pyx_t_5 = 0;
 
-    /* "QAOrder.pyx":172
+    /* "QAOrder.pyx":179
  *         elif date is None and datetime is not None:
  *             self.date = datetime[0:10]
  *             self.datetime = datetime             # <<<<<<<<<<<<<<
  *         elif date is not None and datetime is not None:
  *             self.date = date
  */
-    if (!(likely(PyString_CheckExact(__pyx_v_datetime))||((__pyx_v_datetime) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_datetime)->tp_name), 0))) __PYX_ERR(0, 172, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_v_datetime))||((__pyx_v_datetime) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_datetime)->tp_name), 0))) __PYX_ERR(0, 179, __pyx_L1_error)
     __pyx_t_5 = __pyx_v_datetime;
     __Pyx_INCREF(__pyx_t_5);
     __Pyx_GIVEREF(__pyx_t_5);
@@ -2524,7 +2540,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
     __pyx_v_self->datetime = ((PyObject*)__pyx_t_5);
     __pyx_t_5 = 0;
 
-    /* "QAOrder.pyx":170
+    /* "QAOrder.pyx":177
  *             self.date = date
  *             self.datetime = '{} 09:31:00'.format(self.date)
  *         elif date is None and datetime is not None:             # <<<<<<<<<<<<<<
@@ -2534,7 +2550,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
     goto __pyx_L3;
   }
 
-  /* "QAOrder.pyx":173
+  /* "QAOrder.pyx":180
  *             self.date = datetime[0:10]
  *             self.datetime = datetime
  *         elif date is not None and datetime is not None:             # <<<<<<<<<<<<<<
@@ -2554,14 +2570,14 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_L8_bool_binop_done:;
   if (__pyx_t_2) {
 
-    /* "QAOrder.pyx":174
+    /* "QAOrder.pyx":181
  *             self.datetime = datetime
  *         elif date is not None and datetime is not None:
  *             self.date = date             # <<<<<<<<<<<<<<
  *             self.datetime = datetime
  *         else:
  */
-    if (!(likely(PyString_CheckExact(__pyx_v_date))||((__pyx_v_date) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_date)->tp_name), 0))) __PYX_ERR(0, 174, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_v_date))||((__pyx_v_date) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_date)->tp_name), 0))) __PYX_ERR(0, 181, __pyx_L1_error)
     __pyx_t_5 = __pyx_v_date;
     __Pyx_INCREF(__pyx_t_5);
     __Pyx_GIVEREF(__pyx_t_5);
@@ -2570,14 +2586,14 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
     __pyx_v_self->date = ((PyObject*)__pyx_t_5);
     __pyx_t_5 = 0;
 
-    /* "QAOrder.pyx":175
+    /* "QAOrder.pyx":182
  *         elif date is not None and datetime is not None:
  *             self.date = date
  *             self.datetime = datetime             # <<<<<<<<<<<<<<
  *         else:
  *             pass
  */
-    if (!(likely(PyString_CheckExact(__pyx_v_datetime))||((__pyx_v_datetime) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_datetime)->tp_name), 0))) __PYX_ERR(0, 175, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_v_datetime))||((__pyx_v_datetime) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_datetime)->tp_name), 0))) __PYX_ERR(0, 182, __pyx_L1_error)
     __pyx_t_5 = __pyx_v_datetime;
     __Pyx_INCREF(__pyx_t_5);
     __Pyx_GIVEREF(__pyx_t_5);
@@ -2586,7 +2602,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
     __pyx_v_self->datetime = ((PyObject*)__pyx_t_5);
     __pyx_t_5 = 0;
 
-    /* "QAOrder.pyx":173
+    /* "QAOrder.pyx":180
  *             self.date = datetime[0:10]
  *             self.datetime = datetime
  *         elif date is not None and datetime is not None:             # <<<<<<<<<<<<<<
@@ -2596,7 +2612,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
     goto __pyx_L3;
   }
 
-  /* "QAOrder.pyx":177
+  /* "QAOrder.pyx":184
  *             self.datetime = datetime
  *         else:
  *             pass             # <<<<<<<<<<<<<<
@@ -2607,7 +2623,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   }
   __pyx_L3:;
 
-  /* "QAOrder.pyx":178
+  /* "QAOrder.pyx":185
  *         else:
  *             pass
  *         self.sending_time = self.datetime if sending_time is None else sending_time #             # <<<<<<<<<<<<<<
@@ -2619,7 +2635,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
     __Pyx_INCREF(__pyx_v_self->datetime);
     __pyx_t_5 = __pyx_v_self->datetime;
   } else {
-    if (!(likely(PyString_CheckExact(__pyx_v_sending_time))||((__pyx_v_sending_time) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_sending_time)->tp_name), 0))) __PYX_ERR(0, 178, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_v_sending_time))||((__pyx_v_sending_time) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_sending_time)->tp_name), 0))) __PYX_ERR(0, 185, __pyx_L1_error)
     __Pyx_INCREF(__pyx_v_sending_time);
     __pyx_t_5 = __pyx_v_sending_time;
   }
@@ -2629,16 +2645,16 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->sending_time = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":180
+  /* "QAOrder.pyx":187
  *         self.sending_time = self.datetime if sending_time is None else sending_time #
  * 
  *         self.trade_time = [trade_time] if trade_time else [] #             # <<<<<<<<<<<<<<
  *         self.amount = amount                               #
  *         self.trade_amount = 0                              #
  */
-  __pyx_t_2 = __Pyx_PyObject_IsTrue(__pyx_v_trade_time); if (unlikely(__pyx_t_2 < 0)) __PYX_ERR(0, 180, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_IsTrue(__pyx_v_trade_time); if (unlikely(__pyx_t_2 < 0)) __PYX_ERR(0, 187, __pyx_L1_error)
   if (__pyx_t_2) {
-    __pyx_t_6 = PyList_New(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 180, __pyx_L1_error)
+    __pyx_t_6 = PyList_New(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 187, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_INCREF(__pyx_v_trade_time);
     __Pyx_GIVEREF(__pyx_v_trade_time);
@@ -2646,7 +2662,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
     __pyx_t_5 = __pyx_t_6;
     __pyx_t_6 = 0;
   } else {
-    __pyx_t_6 = PyList_New(0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 180, __pyx_L1_error)
+    __pyx_t_6 = PyList_New(0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 187, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __pyx_t_5 = __pyx_t_6;
     __pyx_t_6 = 0;
@@ -2657,52 +2673,52 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->trade_time = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":181
+  /* "QAOrder.pyx":188
  * 
  *         self.trade_time = [trade_time] if trade_time else [] #
  *         self.amount = amount                               #             # <<<<<<<<<<<<<<
  *         self.trade_amount = 0                              #
  *         self.cancel_amount = 0                             #
  */
-  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_amount); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 181, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_amount); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 188, __pyx_L1_error)
   __pyx_v_self->amount = __pyx_t_1;
 
-  /* "QAOrder.pyx":182
+  /* "QAOrder.pyx":189
  *         self.trade_time = [trade_time] if trade_time else [] #
  *         self.amount = amount                               #
  *         self.trade_amount = 0                              #             # <<<<<<<<<<<<<<
  *         self.cancel_amount = 0                             #
  *         self.towards = towards                             # side
  */
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_amount, __pyx_int_0) < 0) __PYX_ERR(0, 182, __pyx_L1_error)
+  __pyx_v_self->trade_amount = 0.0;
 
-  /* "QAOrder.pyx":183
+  /* "QAOrder.pyx":190
  *         self.amount = amount                               #
  *         self.trade_amount = 0                              #
  *         self.cancel_amount = 0                             #             # <<<<<<<<<<<<<<
  *         self.towards = towards                             # side
  *         self.code = code                                   #
  */
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_cancel_amount, __pyx_int_0) < 0) __PYX_ERR(0, 183, __pyx_L1_error)
+  __pyx_v_self->cancel_amount = 0.0;
 
-  /* "QAOrder.pyx":184
+  /* "QAOrder.pyx":191
  *         self.trade_amount = 0                              #
  *         self.cancel_amount = 0                             #
  *         self.towards = towards                             # side             # <<<<<<<<<<<<<<
  *         self.code = code                                   #
- *         self.user = user                                   #
+ *         self.user_cookie = user_cookie                                   #
  */
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_towards); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 184, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_towards); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 191, __pyx_L1_error)
   __pyx_v_self->towards = __pyx_t_8;
 
-  /* "QAOrder.pyx":185
+  /* "QAOrder.pyx":192
  *         self.cancel_amount = 0                             #
  *         self.towards = towards                             # side
  *         self.code = code                                   #             # <<<<<<<<<<<<<<
- *         self.user = user                                   #
+ *         self.user_cookie = user_cookie                                   #
  *         self.market_type = market_type                     #
  */
-  if (!(likely(PyString_CheckExact(__pyx_v_code))||((__pyx_v_code) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_code)->tp_name), 0))) __PYX_ERR(0, 185, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_code))||((__pyx_v_code) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_code)->tp_name), 0))) __PYX_ERR(0, 192, __pyx_L1_error)
   __pyx_t_5 = __pyx_v_code;
   __Pyx_INCREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_5);
@@ -2711,30 +2727,30 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->code = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":186
+  /* "QAOrder.pyx":193
  *         self.towards = towards                             # side
  *         self.code = code                                   #
- *         self.user = user                                   #             # <<<<<<<<<<<<<<
+ *         self.user_cookie = user_cookie                                   #             # <<<<<<<<<<<<<<
  *         self.market_type = market_type                     #
  *         self.frequence = frequence                         # ()
  */
-  if (!(likely(PyString_CheckExact(__pyx_v_user))||((__pyx_v_user) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_user)->tp_name), 0))) __PYX_ERR(0, 186, __pyx_L1_error)
-  __pyx_t_5 = __pyx_v_user;
+  if (!(likely(PyString_CheckExact(__pyx_v_user_cookie))||((__pyx_v_user_cookie) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_user_cookie)->tp_name), 0))) __PYX_ERR(0, 193, __pyx_L1_error)
+  __pyx_t_5 = __pyx_v_user_cookie;
   __Pyx_INCREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_5);
-  __Pyx_GOTREF(__pyx_v_self->user);
-  __Pyx_DECREF(__pyx_v_self->user);
-  __pyx_v_self->user = ((PyObject*)__pyx_t_5);
+  __Pyx_GOTREF(__pyx_v_self->user_cookie);
+  __Pyx_DECREF(__pyx_v_self->user_cookie);
+  __pyx_v_self->user_cookie = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":187
+  /* "QAOrder.pyx":194
  *         self.code = code                                   #
- *         self.user = user                                   #
+ *         self.user_cookie = user_cookie                                   #
  *         self.market_type = market_type                     #             # <<<<<<<<<<<<<<
  *         self.frequence = frequence                         # ()
  *         self.account_cookie = account_cookie
  */
-  if (!(likely(PyString_CheckExact(__pyx_v_market_type))||((__pyx_v_market_type) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_market_type)->tp_name), 0))) __PYX_ERR(0, 187, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_market_type))||((__pyx_v_market_type) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_market_type)->tp_name), 0))) __PYX_ERR(0, 194, __pyx_L1_error)
   __pyx_t_5 = __pyx_v_market_type;
   __Pyx_INCREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_5);
@@ -2743,14 +2759,14 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->market_type = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":188
- *         self.user = user                                   #
+  /* "QAOrder.pyx":195
+ *         self.user_cookie = user_cookie                                   #
  *         self.market_type = market_type                     #
  *         self.frequence = frequence                         # ()             # <<<<<<<<<<<<<<
  *         self.account_cookie = account_cookie
- *         self.strategy = strategy
+ *         self.strategy = strategy                            # see below
  */
-  if (!(likely(PyString_CheckExact(__pyx_v_frequence))||((__pyx_v_frequence) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_frequence)->tp_name), 0))) __PYX_ERR(0, 188, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_frequence))||((__pyx_v_frequence) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_frequence)->tp_name), 0))) __PYX_ERR(0, 195, __pyx_L1_error)
   __pyx_t_5 = __pyx_v_frequence;
   __Pyx_INCREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_5);
@@ -2759,14 +2775,14 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->frequence = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":189
+  /* "QAOrder.pyx":196
  *         self.market_type = market_type                     #
  *         self.frequence = frequence                         # ()
  *         self.account_cookie = account_cookie             # <<<<<<<<<<<<<<
- *         self.strategy = strategy
- *         self.type = market_type                            # see below
+ *         self.strategy = strategy                            # see below
+ *         self.order_model = order_model
  */
-  if (!(likely(PyString_CheckExact(__pyx_v_account_cookie))||((__pyx_v_account_cookie) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_account_cookie)->tp_name), 0))) __PYX_ERR(0, 189, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_account_cookie))||((__pyx_v_account_cookie) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_account_cookie)->tp_name), 0))) __PYX_ERR(0, 196, __pyx_L1_error)
   __pyx_t_5 = __pyx_v_account_cookie;
   __Pyx_INCREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_5);
@@ -2775,14 +2791,14 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->account_cookie = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":190
+  /* "QAOrder.pyx":197
  *         self.frequence = frequence                         # ()
  *         self.account_cookie = account_cookie
- *         self.strategy = strategy             # <<<<<<<<<<<<<<
- *         self.type = market_type                            # see below
+ *         self.strategy = strategy                            # see below             # <<<<<<<<<<<<<<
  *         self.order_model = order_model
+ *         self.amount_model = amount_model
  */
-  if (!(likely(PyString_CheckExact(__pyx_v_strategy))||((__pyx_v_strategy) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_strategy)->tp_name), 0))) __PYX_ERR(0, 190, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_strategy))||((__pyx_v_strategy) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_strategy)->tp_name), 0))) __PYX_ERR(0, 197, __pyx_L1_error)
   __pyx_t_5 = __pyx_v_strategy;
   __Pyx_INCREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_5);
@@ -2791,23 +2807,14 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->strategy = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":191
+  /* "QAOrder.pyx":198
  *         self.account_cookie = account_cookie
- *         self.strategy = strategy
- *         self.type = market_type                            # see below             # <<<<<<<<<<<<<<
- *         self.order_model = order_model
- *         self.amount_model = amount_model
- */
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_type, __pyx_v_market_type) < 0) __PYX_ERR(0, 191, __pyx_L1_error)
-
-  /* "QAOrder.pyx":192
- *         self.strategy = strategy
- *         self.type = market_type                            # see below
+ *         self.strategy = strategy                            # see below
  *         self.order_model = order_model             # <<<<<<<<<<<<<<
  *         self.amount_model = amount_model
  *         self.order_id = QA_util_random_with_topic(
  */
-  if (!(likely(PyString_CheckExact(__pyx_v_order_model))||((__pyx_v_order_model) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_order_model)->tp_name), 0))) __PYX_ERR(0, 192, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_order_model))||((__pyx_v_order_model) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_order_model)->tp_name), 0))) __PYX_ERR(0, 198, __pyx_L1_error)
   __pyx_t_5 = __pyx_v_order_model;
   __Pyx_INCREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_5);
@@ -2816,14 +2823,14 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->order_model = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":193
- *         self.type = market_type                            # see below
+  /* "QAOrder.pyx":199
+ *         self.strategy = strategy                            # see below
  *         self.order_model = order_model
  *         self.amount_model = amount_model             # <<<<<<<<<<<<<<
  *         self.order_id = QA_util_random_with_topic(
  *             topic='Order'
  */
-  if (!(likely(PyString_CheckExact(__pyx_v_amount_model))||((__pyx_v_amount_model) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_amount_model)->tp_name), 0))) __PYX_ERR(0, 193, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_amount_model))||((__pyx_v_amount_model) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_amount_model)->tp_name), 0))) __PYX_ERR(0, 199, __pyx_L1_error)
   __pyx_t_5 = __pyx_v_amount_model;
   __Pyx_INCREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_5);
@@ -2832,7 +2839,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->amount_model = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":196
+  /* "QAOrder.pyx":202
  *         self.order_id = QA_util_random_with_topic(
  *             topic='Order'
  *         ) if order_id is None else order_id             # <<<<<<<<<<<<<<
@@ -2842,56 +2849,56 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_t_2 = (__pyx_v_order_id == Py_None);
   if ((__pyx_t_2 != 0)) {
 
-    /* "QAOrder.pyx":194
+    /* "QAOrder.pyx":200
  *         self.order_model = order_model
  *         self.amount_model = amount_model
  *         self.order_id = QA_util_random_with_topic(             # <<<<<<<<<<<<<<
  *             topic='Order'
  *         ) if order_id is None else order_id
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_QA_util_random_with_topic); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 194, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_QA_util_random_with_topic); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 200, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
 
-    /* "QAOrder.pyx":195
+    /* "QAOrder.pyx":201
  *         self.amount_model = amount_model
  *         self.order_id = QA_util_random_with_topic(
  *             topic='Order'             # <<<<<<<<<<<<<<
  *         ) if order_id is None else order_id
  *         self.realorder_id = self.order_id
  */
-    __pyx_t_7 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 195, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 201, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_topic, __pyx_n_s_Order) < 0) __PYX_ERR(0, 195, __pyx_L1_error)
+    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_topic, __pyx_n_s_Order) < 0) __PYX_ERR(0, 201, __pyx_L1_error)
 
-    /* "QAOrder.pyx":194
+    /* "QAOrder.pyx":200
  *         self.order_model = order_model
  *         self.amount_model = amount_model
  *         self.order_id = QA_util_random_with_topic(             # <<<<<<<<<<<<<<
  *             topic='Order'
  *         ) if order_id is None else order_id
  */
-    __pyx_t_9 = __Pyx_PyObject_Call(__pyx_t_6, __pyx_empty_tuple, __pyx_t_7); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 194, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_PyObject_Call(__pyx_t_6, __pyx_empty_tuple, __pyx_t_7); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 200, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    if (!(likely(PyString_CheckExact(__pyx_t_9))||((__pyx_t_9) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_9)->tp_name), 0))) __PYX_ERR(0, 194, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_t_9))||((__pyx_t_9) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_9)->tp_name), 0))) __PYX_ERR(0, 200, __pyx_L1_error)
     __pyx_t_5 = __pyx_t_9;
     __pyx_t_9 = 0;
   } else {
 
-    /* "QAOrder.pyx":196
+    /* "QAOrder.pyx":202
  *         self.order_id = QA_util_random_with_topic(
  *             topic='Order'
  *         ) if order_id is None else order_id             # <<<<<<<<<<<<<<
  *         self.realorder_id = self.order_id
  *         self.commission_coeff = commission_coeff
  */
-    if (!(likely(PyString_CheckExact(__pyx_v_order_id))||((__pyx_v_order_id) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_order_id)->tp_name), 0))) __PYX_ERR(0, 196, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_v_order_id))||((__pyx_v_order_id) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_order_id)->tp_name), 0))) __PYX_ERR(0, 202, __pyx_L1_error)
     __Pyx_INCREF(__pyx_v_order_id);
     __pyx_t_5 = __pyx_v_order_id;
   }
 
-  /* "QAOrder.pyx":194
+  /* "QAOrder.pyx":200
  *         self.order_model = order_model
  *         self.amount_model = amount_model
  *         self.order_id = QA_util_random_with_topic(             # <<<<<<<<<<<<<<
@@ -2904,7 +2911,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->order_id = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":197
+  /* "QAOrder.pyx":203
  *             topic='Order'
  *         ) if order_id is None else order_id
  *         self.realorder_id = self.order_id             # <<<<<<<<<<<<<<
@@ -2913,39 +2920,42 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
  */
   __pyx_t_5 = __pyx_v_self->order_id;
   __Pyx_INCREF(__pyx_t_5);
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_realorder_id, __pyx_t_5) < 0) __PYX_ERR(0, 197, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __Pyx_GIVEREF(__pyx_t_5);
+  __Pyx_GOTREF(__pyx_v_self->realorder_id);
+  __Pyx_DECREF(__pyx_v_self->realorder_id);
+  __pyx_v_self->realorder_id = ((PyObject*)__pyx_t_5);
+  __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":198
+  /* "QAOrder.pyx":204
  *         ) if order_id is None else order_id
  *         self.realorder_id = self.order_id
  *         self.commission_coeff = commission_coeff             # <<<<<<<<<<<<<<
  *         self.tax_coeff = tax_coeff
  *         self.trade_id = [trade_id] if trade_id else []
  */
-  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_commission_coeff); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 198, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_commission_coeff); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 204, __pyx_L1_error)
   __pyx_v_self->commission_coeff = __pyx_t_1;
 
-  /* "QAOrder.pyx":199
+  /* "QAOrder.pyx":205
  *         self.realorder_id = self.order_id
  *         self.commission_coeff = commission_coeff
  *         self.tax_coeff = tax_coeff             # <<<<<<<<<<<<<<
  *         self.trade_id = [trade_id] if trade_id else []
  * 
  */
-  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_tax_coeff); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 199, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_tax_coeff); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 205, __pyx_L1_error)
   __pyx_v_self->tax_coeff = __pyx_t_1;
 
-  /* "QAOrder.pyx":200
+  /* "QAOrder.pyx":206
  *         self.commission_coeff = commission_coeff
  *         self.tax_coeff = tax_coeff
  *         self.trade_id = [trade_id] if trade_id else []             # <<<<<<<<<<<<<<
  * 
  *         self.trade_price = 0                                       #
  */
-  __pyx_t_2 = __Pyx_PyObject_IsTrue(__pyx_v_trade_id); if (unlikely(__pyx_t_2 < 0)) __PYX_ERR(0, 200, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_IsTrue(__pyx_v_trade_id); if (unlikely(__pyx_t_2 < 0)) __PYX_ERR(0, 206, __pyx_L1_error)
   if (__pyx_t_2) {
-    __pyx_t_9 = PyList_New(1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 200, __pyx_L1_error)
+    __pyx_t_9 = PyList_New(1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 206, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
     __Pyx_INCREF(__pyx_v_trade_id);
     __Pyx_GIVEREF(__pyx_v_trade_id);
@@ -2953,7 +2963,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
     __pyx_t_5 = __pyx_t_9;
     __pyx_t_9 = 0;
   } else {
-    __pyx_t_9 = PyList_New(0); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 200, __pyx_L1_error)
+    __pyx_t_9 = PyList_New(0); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 206, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
     __pyx_t_5 = __pyx_t_9;
     __pyx_t_9 = 0;
@@ -2964,23 +2974,23 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->trade_id = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":202
+  /* "QAOrder.pyx":208
  *         self.trade_id = [trade_id] if trade_id else []
  * 
  *         self.trade_price = 0                                       #             # <<<<<<<<<<<<<<
  *         self.broker = broker
  *         self.callback = callback                                   # callback
  */
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_price, __pyx_int_0) < 0) __PYX_ERR(0, 202, __pyx_L1_error)
+  __pyx_v_self->trade_price = 0.0;
 
-  /* "QAOrder.pyx":203
+  /* "QAOrder.pyx":209
  * 
  *         self.trade_price = 0                                       #
  *         self.broker = broker             # <<<<<<<<<<<<<<
  *         self.callback = callback                                   # callback
  *         self.money = money                                         #
  */
-  if (!(likely(PyString_CheckExact(__pyx_v_broker))||((__pyx_v_broker) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_broker)->tp_name), 0))) __PYX_ERR(0, 203, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_broker))||((__pyx_v_broker) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_broker)->tp_name), 0))) __PYX_ERR(0, 209, __pyx_L1_error)
   __pyx_t_5 = __pyx_v_broker;
   __Pyx_INCREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_5);
@@ -2989,7 +2999,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->broker = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":204
+  /* "QAOrder.pyx":210
  *         self.trade_price = 0                                       #
  *         self.broker = broker
  *         self.callback = callback                                   # callback             # <<<<<<<<<<<<<<
@@ -3002,33 +3012,37 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __Pyx_DECREF(__pyx_v_self->callback);
   __pyx_v_self->callback = __pyx_v_callback;
 
-  /* "QAOrder.pyx":205
+  /* "QAOrder.pyx":211
  *         self.broker = broker
  *         self.callback = callback                                   # callback
  *         self.money = money                                         #             # <<<<<<<<<<<<<<
  *         self.reason = None                                         #
  *         self.exchange_id = exchange_id
  */
-  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_money); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 205, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_money); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 211, __pyx_L1_error)
   __pyx_v_self->money = __pyx_t_1;
 
-  /* "QAOrder.pyx":206
+  /* "QAOrder.pyx":212
  *         self.callback = callback                                   # callback
  *         self.money = money                                         #
  *         self.reason = None                                         #             # <<<<<<<<<<<<<<
  *         self.exchange_id = exchange_id
  *         self.time_condition = 'GFD'                                #
  */
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_reason, Py_None) < 0) __PYX_ERR(0, 206, __pyx_L1_error)
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  __Pyx_GOTREF(__pyx_v_self->reason);
+  __Pyx_DECREF(__pyx_v_self->reason);
+  __pyx_v_self->reason = ((PyObject*)Py_None);
 
-  /* "QAOrder.pyx":207
+  /* "QAOrder.pyx":213
  *         self.money = money                                         #
  *         self.reason = None                                         #
  *         self.exchange_id = exchange_id             # <<<<<<<<<<<<<<
  *         self.time_condition = 'GFD'                                #
  *         self._status = _status
  */
-  if (!(likely(PyString_CheckExact(__pyx_v_exchange_id))||((__pyx_v_exchange_id) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_exchange_id)->tp_name), 0))) __PYX_ERR(0, 207, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_exchange_id))||((__pyx_v_exchange_id) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_exchange_id)->tp_name), 0))) __PYX_ERR(0, 213, __pyx_L1_error)
   __pyx_t_5 = __pyx_v_exchange_id;
   __Pyx_INCREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_5);
@@ -3037,23 +3051,27 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->exchange_id = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":208
+  /* "QAOrder.pyx":214
  *         self.reason = None                                         #
  *         self.exchange_id = exchange_id
  *         self.time_condition = 'GFD'                                #             # <<<<<<<<<<<<<<
  *         self._status = _status
  *         self.exchange_code = exchange_code
  */
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_time_condition, __pyx_n_s_GFD) < 0) __PYX_ERR(0, 208, __pyx_L1_error)
+  __Pyx_INCREF(__pyx_n_s_GFD);
+  __Pyx_GIVEREF(__pyx_n_s_GFD);
+  __Pyx_GOTREF(__pyx_v_self->time_condition);
+  __Pyx_DECREF(__pyx_v_self->time_condition);
+  __pyx_v_self->time_condition = __pyx_n_s_GFD;
 
-  /* "QAOrder.pyx":209
+  /* "QAOrder.pyx":215
  *         self.exchange_id = exchange_id
  *         self.time_condition = 'GFD'                                #
  *         self._status = _status             # <<<<<<<<<<<<<<
  *         self.exchange_code = exchange_code
  * 
  */
-  if (!(likely(PyString_CheckExact(__pyx_v__status))||((__pyx_v__status) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v__status)->tp_name), 0))) __PYX_ERR(0, 209, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v__status))||((__pyx_v__status) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v__status)->tp_name), 0))) __PYX_ERR(0, 215, __pyx_L1_error)
   __pyx_t_5 = __pyx_v__status;
   __Pyx_INCREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_5);
@@ -3062,20 +3080,24 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   __pyx_v_self->_status = ((PyObject*)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":210
+  /* "QAOrder.pyx":216
  *         self.time_condition = 'GFD'                                #
  *         self._status = _status
  *         self.exchange_code = exchange_code             # <<<<<<<<<<<<<<
  * 
  *                                                                    #  2018/11/12
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_exchange_code); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 210, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_exchange_code); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 216, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_exchange_code, __pyx_t_5) < 0) __PYX_ERR(0, 210, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  if (!(likely(PyDict_CheckExact(__pyx_t_5))||((__pyx_t_5) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "dict", Py_TYPE(__pyx_t_5)->tp_name), 0))) __PYX_ERR(0, 216, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_5);
+  __Pyx_GOTREF(__pyx_v_self->exchange_code);
+  __Pyx_DECREF(__pyx_v_self->exchange_code);
+  __pyx_v_self->exchange_code = ((PyObject*)__pyx_t_5);
+  __pyx_t_5 = 0;
 
-  /* "QAOrder.pyx":90
- *     cdef public str exchange_id
+  /* "QAOrder.pyx":97
+ *     cdef public dict exchange_code
  * 
  *     def __init__(             # <<<<<<<<<<<<<<
  *             self,
@@ -3097,7 +3119,7 @@ static int __pyx_pf_7QAOrder_8QA_Order___init__(struct __pyx_obj_7QAOrder_QA_Ord
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":219
+/* "QAOrder.pyx":225
  * 
  *     @property
  *     def pending_amount(self):             # <<<<<<<<<<<<<<
@@ -3122,11 +3144,9 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_14pending_amount___get__(struct __p
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  PyObject *__pyx_t_2 = NULL;
-  PyObject *__pyx_t_3 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "QAOrder.pyx":220
+  /* "QAOrder.pyx":226
  *     @property
  *     def pending_amount(self):
  *         return self.amount - self.cancel_amount - self.trade_amount             # <<<<<<<<<<<<<<
@@ -3134,25 +3154,13 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_14pending_amount___get__(struct __p
  *     def __repr__(self):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 220, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(((__pyx_v_self->amount - __pyx_v_self->cancel_amount) - __pyx_v_self->trade_amount)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 226, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_cancel_amount); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 220, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyNumber_Subtract(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 220, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_amount); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 220, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_1 = PyNumber_Subtract(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 220, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "QAOrder.pyx":219
+  /* "QAOrder.pyx":225
  * 
  *     @property
  *     def pending_amount(self):             # <<<<<<<<<<<<<<
@@ -3163,8 +3171,6 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_14pending_amount___get__(struct __p
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_3);
   __Pyx_AddTraceback("QAOrder.QA_Order.pending_amount.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
@@ -3173,7 +3179,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_14pending_amount___get__(struct __p
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":222
+/* "QAOrder.pyx":228
  *         return self.amount - self.cancel_amount - self.trade_amount
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -3208,13 +3214,11 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_2__repr__(struct __pyx_obj_7QAOrder
   PyObject *__pyx_t_5 = NULL;
   PyObject *__pyx_t_6 = NULL;
   PyObject *__pyx_t_7 = NULL;
-  PyObject *__pyx_t_8 = NULL;
+  int __pyx_t_8;
   PyObject *__pyx_t_9 = NULL;
-  int __pyx_t_10;
-  PyObject *__pyx_t_11 = NULL;
   __Pyx_RefNannySetupContext("__repr__", 0);
 
-  /* "QAOrder.pyx":227
+  /* "QAOrder.pyx":233
  *         :return:
  *         '''
  *         return '< QA_Order realorder_id {} datetime:{} code:{} amount:{} price:{} towards:{} btype:{} order_id:{} account:{} status:{} >'.format(             # <<<<<<<<<<<<<<
@@ -3222,154 +3226,130 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_2__repr__(struct __pyx_obj_7QAOrder
  *             self.datetime,
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_QA_Order_realorder_id_datetime, __pyx_n_s_format); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 227, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_QA_Order_realorder_id_datetime, __pyx_n_s_format); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 233, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
 
-  /* "QAOrder.pyx":228
- *         '''
- *         return '< QA_Order realorder_id {} datetime:{} code:{} amount:{} price:{} towards:{} btype:{} order_id:{} account:{} status:{} >'.format(
- *             self.realorder_id,             # <<<<<<<<<<<<<<
- *             self.datetime,
- *             self.code,
- */
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_realorder_id); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 228, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-
-  /* "QAOrder.pyx":231
+  /* "QAOrder.pyx":237
  *             self.datetime,
  *             self.code,
  *             self.amount,             # <<<<<<<<<<<<<<
  *             self.price,
  *             self.towards,
  */
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 231, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_self->amount); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 237, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
 
-  /* "QAOrder.pyx":232
+  /* "QAOrder.pyx":238
  *             self.code,
  *             self.amount,
  *             self.price,             # <<<<<<<<<<<<<<
  *             self.towards,
- *             self.type,
+ *             self.market_type,
  */
-  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_self->price); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 232, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
+  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 238, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
 
-  /* "QAOrder.pyx":233
+  /* "QAOrder.pyx":239
  *             self.amount,
  *             self.price,
  *             self.towards,             # <<<<<<<<<<<<<<
- *             self.type,
+ *             self.market_type,
  *             self.order_id,
  */
-  __pyx_t_6 = __Pyx_PyInt_From_int(__pyx_v_self->towards); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 233, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_6);
+  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_self->towards); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 239, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
 
-  /* "QAOrder.pyx":234
- *             self.price,
- *             self.towards,
- *             self.type,             # <<<<<<<<<<<<<<
- *             self.order_id,
- *             self.account_cookie,
- */
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_type); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 234, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_7);
-
-  /* "QAOrder.pyx":237
+  /* "QAOrder.pyx":243
  *             self.order_id,
  *             self.account_cookie,
  *             self.status             # <<<<<<<<<<<<<<
  *         )
  * 
  */
-  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_status_2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 237, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_8);
-  __pyx_t_9 = NULL;
-  __pyx_t_10 = 0;
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_status_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 243, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __pyx_t_7 = NULL;
+  __pyx_t_8 = 0;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
-    __pyx_t_9 = PyMethod_GET_SELF(__pyx_t_2);
-    if (likely(__pyx_t_9)) {
+    __pyx_t_7 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_7)) {
       PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
-      __Pyx_INCREF(__pyx_t_9);
+      __Pyx_INCREF(__pyx_t_7);
       __Pyx_INCREF(function);
       __Pyx_DECREF_SET(__pyx_t_2, function);
-      __pyx_t_10 = 1;
+      __pyx_t_8 = 1;
     }
   }
   #if CYTHON_FAST_PYCALL
   if (PyFunction_Check(__pyx_t_2)) {
-    PyObject *__pyx_temp[11] = {__pyx_t_9, __pyx_t_3, __pyx_v_self->datetime, __pyx_v_self->code, __pyx_t_4, __pyx_t_5, __pyx_t_6, __pyx_t_7, __pyx_v_self->order_id, __pyx_v_self->account_cookie, __pyx_t_8};
-    __pyx_t_1 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_10, 10+__pyx_t_10); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 227, __pyx_L1_error)
-    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    PyObject *__pyx_temp[11] = {__pyx_t_7, __pyx_v_self->realorder_id, __pyx_v_self->datetime, __pyx_v_self->code, __pyx_t_3, __pyx_t_4, __pyx_t_5, __pyx_v_self->market_type, __pyx_v_self->order_id, __pyx_v_self->account_cookie, __pyx_t_6};
+    __pyx_t_1 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_8, 10+__pyx_t_8); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 233, __pyx_L1_error)
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
   } else
   #endif
   #if CYTHON_FAST_PYCCALL
   if (__Pyx_PyFastCFunction_Check(__pyx_t_2)) {
-    PyObject *__pyx_temp[11] = {__pyx_t_9, __pyx_t_3, __pyx_v_self->datetime, __pyx_v_self->code, __pyx_t_4, __pyx_t_5, __pyx_t_6, __pyx_t_7, __pyx_v_self->order_id, __pyx_v_self->account_cookie, __pyx_t_8};
-    __pyx_t_1 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_10, 10+__pyx_t_10); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 227, __pyx_L1_error)
-    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    PyObject *__pyx_temp[11] = {__pyx_t_7, __pyx_v_self->realorder_id, __pyx_v_self->datetime, __pyx_v_self->code, __pyx_t_3, __pyx_t_4, __pyx_t_5, __pyx_v_self->market_type, __pyx_v_self->order_id, __pyx_v_self->account_cookie, __pyx_t_6};
+    __pyx_t_1 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_8, 10+__pyx_t_8); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 233, __pyx_L1_error)
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
   } else
   #endif
   {
-    __pyx_t_11 = PyTuple_New(10+__pyx_t_10); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 227, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_11);
-    if (__pyx_t_9) {
-      __Pyx_GIVEREF(__pyx_t_9); PyTuple_SET_ITEM(__pyx_t_11, 0, __pyx_t_9); __pyx_t_9 = NULL;
+    __pyx_t_9 = PyTuple_New(10+__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 233, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_9);
+    if (__pyx_t_7) {
+      __Pyx_GIVEREF(__pyx_t_7); PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_t_7); __pyx_t_7 = NULL;
     }
-    __Pyx_GIVEREF(__pyx_t_3);
-    PyTuple_SET_ITEM(__pyx_t_11, 0+__pyx_t_10, __pyx_t_3);
+    __Pyx_INCREF(__pyx_v_self->realorder_id);
+    __Pyx_GIVEREF(__pyx_v_self->realorder_id);
+    PyTuple_SET_ITEM(__pyx_t_9, 0+__pyx_t_8, __pyx_v_self->realorder_id);
     __Pyx_INCREF(__pyx_v_self->datetime);
     __Pyx_GIVEREF(__pyx_v_self->datetime);
-    PyTuple_SET_ITEM(__pyx_t_11, 1+__pyx_t_10, __pyx_v_self->datetime);
+    PyTuple_SET_ITEM(__pyx_t_9, 1+__pyx_t_8, __pyx_v_self->datetime);
     __Pyx_INCREF(__pyx_v_self->code);
     __Pyx_GIVEREF(__pyx_v_self->code);
-    PyTuple_SET_ITEM(__pyx_t_11, 2+__pyx_t_10, __pyx_v_self->code);
+    PyTuple_SET_ITEM(__pyx_t_9, 2+__pyx_t_8, __pyx_v_self->code);
+    __Pyx_GIVEREF(__pyx_t_3);
+    PyTuple_SET_ITEM(__pyx_t_9, 3+__pyx_t_8, __pyx_t_3);
     __Pyx_GIVEREF(__pyx_t_4);
-    PyTuple_SET_ITEM(__pyx_t_11, 3+__pyx_t_10, __pyx_t_4);
+    PyTuple_SET_ITEM(__pyx_t_9, 4+__pyx_t_8, __pyx_t_4);
     __Pyx_GIVEREF(__pyx_t_5);
-    PyTuple_SET_ITEM(__pyx_t_11, 4+__pyx_t_10, __pyx_t_5);
-    __Pyx_GIVEREF(__pyx_t_6);
-    PyTuple_SET_ITEM(__pyx_t_11, 5+__pyx_t_10, __pyx_t_6);
-    __Pyx_GIVEREF(__pyx_t_7);
-    PyTuple_SET_ITEM(__pyx_t_11, 6+__pyx_t_10, __pyx_t_7);
+    PyTuple_SET_ITEM(__pyx_t_9, 5+__pyx_t_8, __pyx_t_5);
+    __Pyx_INCREF(__pyx_v_self->market_type);
+    __Pyx_GIVEREF(__pyx_v_self->market_type);
+    PyTuple_SET_ITEM(__pyx_t_9, 6+__pyx_t_8, __pyx_v_self->market_type);
     __Pyx_INCREF(__pyx_v_self->order_id);
     __Pyx_GIVEREF(__pyx_v_self->order_id);
-    PyTuple_SET_ITEM(__pyx_t_11, 7+__pyx_t_10, __pyx_v_self->order_id);
+    PyTuple_SET_ITEM(__pyx_t_9, 7+__pyx_t_8, __pyx_v_self->order_id);
     __Pyx_INCREF(__pyx_v_self->account_cookie);
     __Pyx_GIVEREF(__pyx_v_self->account_cookie);
-    PyTuple_SET_ITEM(__pyx_t_11, 8+__pyx_t_10, __pyx_v_self->account_cookie);
-    __Pyx_GIVEREF(__pyx_t_8);
-    PyTuple_SET_ITEM(__pyx_t_11, 9+__pyx_t_10, __pyx_t_8);
+    PyTuple_SET_ITEM(__pyx_t_9, 8+__pyx_t_8, __pyx_v_self->account_cookie);
+    __Pyx_GIVEREF(__pyx_t_6);
+    PyTuple_SET_ITEM(__pyx_t_9, 9+__pyx_t_8, __pyx_t_6);
     __pyx_t_3 = 0;
     __pyx_t_4 = 0;
     __pyx_t_5 = 0;
     __pyx_t_6 = 0;
-    __pyx_t_7 = 0;
-    __pyx_t_8 = 0;
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_11, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 227, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_9, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 233, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+    __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
   }
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "QAOrder.pyx":222
+  /* "QAOrder.pyx":228
  *         return self.amount - self.cancel_amount - self.trade_amount
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -3386,9 +3366,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_2__repr__(struct __pyx_obj_7QAOrder
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_XDECREF(__pyx_t_8);
   __Pyx_XDECREF(__pyx_t_9);
-  __Pyx_XDECREF(__pyx_t_11);
   __Pyx_AddTraceback("QAOrder.QA_Order.__repr__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
@@ -3397,7 +3375,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_2__repr__(struct __pyx_obj_7QAOrder
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":241
+/* "QAOrder.pyx":247
  * 
  *     @property
  *     def status(self):             # <<<<<<<<<<<<<<
@@ -3428,7 +3406,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
   int __pyx_t_5;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "QAOrder.pyx":244
+  /* "QAOrder.pyx":250
  * 
  *         #
  *         if self._status in [ORDER_STATUS.FAILED,             # <<<<<<<<<<<<<<
@@ -3437,12 +3415,12 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
  */
   __Pyx_INCREF(__pyx_v_self->_status);
   __pyx_t_1 = __pyx_v_self->_status;
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 244, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 250, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_FAILED); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 244, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_FAILED); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 250, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_5 = (__Pyx_PyString_Equals(__pyx_t_1, __pyx_t_4, Py_EQ)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 244, __pyx_L1_error)
+  __pyx_t_5 = (__Pyx_PyString_Equals(__pyx_t_1, __pyx_t_4, Py_EQ)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 250, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   if (!__pyx_t_5) {
   } else {
@@ -3450,19 +3428,19 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
     goto __pyx_L4_bool_binop_done;
   }
 
-  /* "QAOrder.pyx":245
+  /* "QAOrder.pyx":251
  *         #
  *         if self._status in [ORDER_STATUS.FAILED,
  *                             ORDER_STATUS.NEXT,             # <<<<<<<<<<<<<<
  *                             ORDER_STATUS.SETTLED,
  *                             ORDER_STATUS.CANCEL_ALL,
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 245, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 251, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_NEXT); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 245, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_NEXT); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 251, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_5 = (__Pyx_PyString_Equals(__pyx_t_1, __pyx_t_3, Py_EQ)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 244, __pyx_L1_error)
+  __pyx_t_5 = (__Pyx_PyString_Equals(__pyx_t_1, __pyx_t_3, Py_EQ)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 250, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   if (!__pyx_t_5) {
   } else {
@@ -3470,19 +3448,19 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
     goto __pyx_L4_bool_binop_done;
   }
 
-  /* "QAOrder.pyx":246
+  /* "QAOrder.pyx":252
  *         if self._status in [ORDER_STATUS.FAILED,
  *                             ORDER_STATUS.NEXT,
  *                             ORDER_STATUS.SETTLED,             # <<<<<<<<<<<<<<
  *                             ORDER_STATUS.CANCEL_ALL,
  *                             ORDER_STATUS.CANCEL_PART]:
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 246, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 252, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_SETTLED); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 246, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_SETTLED); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 252, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_5 = (__Pyx_PyString_Equals(__pyx_t_1, __pyx_t_4, Py_EQ)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 244, __pyx_L1_error)
+  __pyx_t_5 = (__Pyx_PyString_Equals(__pyx_t_1, __pyx_t_4, Py_EQ)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 250, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   if (!__pyx_t_5) {
   } else {
@@ -3490,19 +3468,19 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
     goto __pyx_L4_bool_binop_done;
   }
 
-  /* "QAOrder.pyx":247
+  /* "QAOrder.pyx":253
  *                             ORDER_STATUS.NEXT,
  *                             ORDER_STATUS.SETTLED,
  *                             ORDER_STATUS.CANCEL_ALL,             # <<<<<<<<<<<<<<
  *                             ORDER_STATUS.CANCEL_PART]:
  *             return self._status
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 247, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 253, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_CANCEL_ALL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 247, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_CANCEL_ALL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 253, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_5 = (__Pyx_PyString_Equals(__pyx_t_1, __pyx_t_3, Py_EQ)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 244, __pyx_L1_error)
+  __pyx_t_5 = (__Pyx_PyString_Equals(__pyx_t_1, __pyx_t_3, Py_EQ)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 250, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   if (!__pyx_t_5) {
   } else {
@@ -3510,25 +3488,25 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
     goto __pyx_L4_bool_binop_done;
   }
 
-  /* "QAOrder.pyx":248
+  /* "QAOrder.pyx":254
  *                             ORDER_STATUS.SETTLED,
  *                             ORDER_STATUS.CANCEL_ALL,
  *                             ORDER_STATUS.CANCEL_PART]:             # <<<<<<<<<<<<<<
  *             return self._status
  * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 248, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 254, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_CANCEL_PART); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 248, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_CANCEL_PART); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 254, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_5 = (__Pyx_PyString_Equals(__pyx_t_1, __pyx_t_4, Py_EQ)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 244, __pyx_L1_error)
+  __pyx_t_5 = (__Pyx_PyString_Equals(__pyx_t_1, __pyx_t_4, Py_EQ)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 250, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_t_2 = __pyx_t_5;
   __pyx_L4_bool_binop_done:;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":244
+  /* "QAOrder.pyx":250
  * 
  *         #
  *         if self._status in [ORDER_STATUS.FAILED,             # <<<<<<<<<<<<<<
@@ -3538,7 +3516,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
   __pyx_t_5 = (__pyx_t_2 != 0);
   if (__pyx_t_5) {
 
-    /* "QAOrder.pyx":249
+    /* "QAOrder.pyx":255
  *                             ORDER_STATUS.CANCEL_ALL,
  *                             ORDER_STATUS.CANCEL_PART]:
  *             return self._status             # <<<<<<<<<<<<<<
@@ -3550,7 +3528,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
     __pyx_r = __pyx_v_self->_status;
     goto __pyx_L0;
 
-    /* "QAOrder.pyx":244
+    /* "QAOrder.pyx":250
  * 
  *         #
  *         if self._status in [ORDER_STATUS.FAILED,             # <<<<<<<<<<<<<<
@@ -3559,41 +3537,41 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
  */
   }
 
-  /* "QAOrder.pyx":251
+  /* "QAOrder.pyx":257
  *             return self._status
  * 
  *         if self.pending_amount <= 0:             # <<<<<<<<<<<<<<
  *             self._status = ORDER_STATUS.SUCCESS_ALL
  *             return self._status
  */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_pending_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 251, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_pending_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 257, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_3 = PyObject_RichCompare(__pyx_t_4, __pyx_int_0, Py_LE); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 251, __pyx_L1_error)
+  __pyx_t_3 = PyObject_RichCompare(__pyx_t_4, __pyx_int_0, Py_LE); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 257, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 251, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 257, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   if (__pyx_t_5) {
 
-    /* "QAOrder.pyx":252
+    /* "QAOrder.pyx":258
  * 
  *         if self.pending_amount <= 0:
  *             self._status = ORDER_STATUS.SUCCESS_ALL             # <<<<<<<<<<<<<<
  *             return self._status
  *         elif self.pending_amount > 0 and self.trade_amount > 0:
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 252, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 258, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_SUCCESS_ALL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 252, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_SUCCESS_ALL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 258, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 252, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 258, __pyx_L1_error)
     __Pyx_GIVEREF(__pyx_t_4);
     __Pyx_GOTREF(__pyx_v_self->_status);
     __Pyx_DECREF(__pyx_v_self->_status);
     __pyx_v_self->_status = ((PyObject*)__pyx_t_4);
     __pyx_t_4 = 0;
 
-    /* "QAOrder.pyx":253
+    /* "QAOrder.pyx":259
  *         if self.pending_amount <= 0:
  *             self._status = ORDER_STATUS.SUCCESS_ALL
  *             return self._status             # <<<<<<<<<<<<<<
@@ -3605,7 +3583,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
     __pyx_r = __pyx_v_self->_status;
     goto __pyx_L0;
 
-    /* "QAOrder.pyx":251
+    /* "QAOrder.pyx":257
  *             return self._status
  * 
  *         if self.pending_amount <= 0:             # <<<<<<<<<<<<<<
@@ -3614,54 +3592,49 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
  */
   }
 
-  /* "QAOrder.pyx":254
+  /* "QAOrder.pyx":260
  *             self._status = ORDER_STATUS.SUCCESS_ALL
  *             return self._status
  *         elif self.pending_amount > 0 and self.trade_amount > 0:             # <<<<<<<<<<<<<<
  *             self._status = ORDER_STATUS.SUCCESS_PART
  *             return self._status
  */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_pending_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 254, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_pending_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 260, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_3 = PyObject_RichCompare(__pyx_t_4, __pyx_int_0, Py_GT); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 254, __pyx_L1_error)
+  __pyx_t_3 = PyObject_RichCompare(__pyx_t_4, __pyx_int_0, Py_GT); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 260, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_2 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_2 < 0)) __PYX_ERR(0, 254, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_2 < 0)) __PYX_ERR(0, 260, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   if (__pyx_t_2) {
   } else {
     __pyx_t_5 = __pyx_t_2;
     goto __pyx_L10_bool_binop_done;
   }
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_amount); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 254, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = PyObject_RichCompare(__pyx_t_3, __pyx_int_0, Py_GT); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 254, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_2 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_2 < 0)) __PYX_ERR(0, 254, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_t_2 = ((__pyx_v_self->trade_amount > 0.0) != 0);
   __pyx_t_5 = __pyx_t_2;
   __pyx_L10_bool_binop_done:;
   if (__pyx_t_5) {
 
-    /* "QAOrder.pyx":255
+    /* "QAOrder.pyx":261
  *             return self._status
  *         elif self.pending_amount > 0 and self.trade_amount > 0:
  *             self._status = ORDER_STATUS.SUCCESS_PART             # <<<<<<<<<<<<<<
  *             return self._status
  *         elif self.trade_amount == 0:
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 255, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_SUCCESS_PART); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 255, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 261, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    if (!(likely(PyString_CheckExact(__pyx_t_3))||((__pyx_t_3) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_3)->tp_name), 0))) __PYX_ERR(0, 255, __pyx_L1_error)
-    __Pyx_GIVEREF(__pyx_t_3);
+    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_SUCCESS_PART); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 261, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 261, __pyx_L1_error)
+    __Pyx_GIVEREF(__pyx_t_4);
     __Pyx_GOTREF(__pyx_v_self->_status);
     __Pyx_DECREF(__pyx_v_self->_status);
-    __pyx_v_self->_status = ((PyObject*)__pyx_t_3);
-    __pyx_t_3 = 0;
+    __pyx_v_self->_status = ((PyObject*)__pyx_t_4);
+    __pyx_t_4 = 0;
 
-    /* "QAOrder.pyx":256
+    /* "QAOrder.pyx":262
  *         elif self.pending_amount > 0 and self.trade_amount > 0:
  *             self._status = ORDER_STATUS.SUCCESS_PART
  *             return self._status             # <<<<<<<<<<<<<<
@@ -3673,7 +3646,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
     __pyx_r = __pyx_v_self->_status;
     goto __pyx_L0;
 
-    /* "QAOrder.pyx":254
+    /* "QAOrder.pyx":260
  *             self._status = ORDER_STATUS.SUCCESS_ALL
  *             return self._status
  *         elif self.pending_amount > 0 and self.trade_amount > 0:             # <<<<<<<<<<<<<<
@@ -3682,42 +3655,36 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
  */
   }
 
-  /* "QAOrder.pyx":257
+  /* "QAOrder.pyx":263
  *             self._status = ORDER_STATUS.SUCCESS_PART
  *             return self._status
  *         elif self.trade_amount == 0:             # <<<<<<<<<<<<<<
  *             self._status = ORDER_STATUS.QUEUED
  *             return self._status
  */
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_amount); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 257, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyInt_EqObjC(__pyx_t_3, __pyx_int_0, 0, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 257, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 257, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_t_5 = ((__pyx_v_self->trade_amount == 0.0) != 0);
   if (__pyx_t_5) {
 
-    /* "QAOrder.pyx":258
+    /* "QAOrder.pyx":264
  *             return self._status
  *         elif self.trade_amount == 0:
  *             self._status = ORDER_STATUS.QUEUED             # <<<<<<<<<<<<<<
  *             return self._status
  * 
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 258, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 264, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_QUEUED); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 258, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_QUEUED); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 264, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    if (!(likely(PyString_CheckExact(__pyx_t_3))||((__pyx_t_3) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_3)->tp_name), 0))) __PYX_ERR(0, 258, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_t_3))||((__pyx_t_3) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_3)->tp_name), 0))) __PYX_ERR(0, 264, __pyx_L1_error)
     __Pyx_GIVEREF(__pyx_t_3);
     __Pyx_GOTREF(__pyx_v_self->_status);
     __Pyx_DECREF(__pyx_v_self->_status);
     __pyx_v_self->_status = ((PyObject*)__pyx_t_3);
     __pyx_t_3 = 0;
 
-    /* "QAOrder.pyx":259
+    /* "QAOrder.pyx":265
  *         elif self.trade_amount == 0:
  *             self._status = ORDER_STATUS.QUEUED
  *             return self._status             # <<<<<<<<<<<<<<
@@ -3729,7 +3696,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
     __pyx_r = __pyx_v_self->_status;
     goto __pyx_L0;
 
-    /* "QAOrder.pyx":257
+    /* "QAOrder.pyx":263
  *             self._status = ORDER_STATUS.SUCCESS_PART
  *             return self._status
  *         elif self.trade_amount == 0:             # <<<<<<<<<<<<<<
@@ -3738,7 +3705,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
  */
   }
 
-  /* "QAOrder.pyx":241
+  /* "QAOrder.pyx":247
  * 
  *     @property
  *     def status(self):             # <<<<<<<<<<<<<<
@@ -3761,7 +3728,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6status___get__(struct __pyx_obj_7Q
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":261
+/* "QAOrder.pyx":267
  *             return self._status
  * 
  *     def get_exchange(self, code):             # <<<<<<<<<<<<<<
@@ -3788,10 +3755,9 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_4get_exchange(struct __pyx_obj_7QAO
   PyObject *__pyx_t_1 = NULL;
   PyObject *__pyx_t_2 = NULL;
   PyObject *__pyx_t_3 = NULL;
-  PyObject *__pyx_t_4 = NULL;
   __Pyx_RefNannySetupContext("get_exchange", 0);
 
-  /* "QAOrder.pyx":262
+  /* "QAOrder.pyx":268
  * 
  *     def get_exchange(self, code):
  *         return self.exchange_code[code.lower()]             # <<<<<<<<<<<<<<
@@ -3799,34 +3765,35 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_4get_exchange(struct __pyx_obj_7QAO
  *     def create(self):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_exchange_code); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 262, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_code, __pyx_n_s_lower); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 262, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = NULL;
-  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_3))) {
-    __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_3);
-    if (likely(__pyx_t_4)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
-      __Pyx_INCREF(__pyx_t_4);
+  if (unlikely(__pyx_v_self->exchange_code == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+    __PYX_ERR(0, 268, __pyx_L1_error)
+  }
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_code, __pyx_n_s_lower); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 268, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = NULL;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_3);
       __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_3, function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
     }
   }
-  __pyx_t_2 = (__pyx_t_4) ? __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4) : __Pyx_PyObject_CallNoArg(__pyx_t_3);
-  __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 262, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyObject_GetItem(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 262, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = (__pyx_t_3) ? __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3) : __Pyx_PyObject_CallNoArg(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 268, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_r = __pyx_t_3;
-  __pyx_t_3 = 0;
+  __pyx_t_2 = __Pyx_PyDict_GetItem(__pyx_v_self->exchange_code, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 268, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_r = __pyx_t_2;
+  __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "QAOrder.pyx":261
+  /* "QAOrder.pyx":267
  *             return self._status
  * 
  *     def get_exchange(self, code):             # <<<<<<<<<<<<<<
@@ -3839,7 +3806,6 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_4get_exchange(struct __pyx_obj_7QAO
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_XDECREF(__pyx_t_4);
   __Pyx_AddTraceback("QAOrder.QA_Order.get_exchange", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
@@ -3848,7 +3814,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_4get_exchange(struct __pyx_obj_7QAO
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":264
+/* "QAOrder.pyx":270
  *         return self.exchange_code[code.lower()]
  * 
  *     def create(self):             # <<<<<<<<<<<<<<
@@ -3877,26 +3843,26 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6create(struct __pyx_obj_7QAOrder_Q
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("create", 0);
 
-  /* "QAOrder.pyx":268
+  /* "QAOrder.pyx":274
  *         """
  *         # (-- )
  *         self._status = ORDER_STATUS.NEW             # <<<<<<<<<<<<<<
  * 
  *     def cancel(self):
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 268, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 274, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_NEW); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 268, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_NEW); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 274, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (!(likely(PyString_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_2)->tp_name), 0))) __PYX_ERR(0, 268, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_2)->tp_name), 0))) __PYX_ERR(0, 274, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_2);
   __Pyx_GOTREF(__pyx_v_self->_status);
   __Pyx_DECREF(__pyx_v_self->_status);
   __pyx_v_self->_status = ((PyObject*)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "QAOrder.pyx":264
+  /* "QAOrder.pyx":270
  *         return self.exchange_code[code.lower()]
  * 
  *     def create(self):             # <<<<<<<<<<<<<<
@@ -3918,7 +3884,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_6create(struct __pyx_obj_7QAOrder_Q
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":270
+/* "QAOrder.pyx":276
  *         self._status = ORDER_STATUS.NEW
  * 
  *     def cancel(self):             # <<<<<<<<<<<<<<
@@ -3943,66 +3909,50 @@ static PyObject *__pyx_pw_7QAOrder_8QA_Order_9cancel(PyObject *__pyx_v_self, CYT
 static PyObject *__pyx_pf_7QAOrder_8QA_Order_8cancel(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
+  int __pyx_t_1;
   PyObject *__pyx_t_2 = NULL;
   PyObject *__pyx_t_3 = NULL;
-  int __pyx_t_4;
   __Pyx_RefNannySetupContext("cancel", 0);
 
-  /* "QAOrder.pyx":277
+  /* "QAOrder.pyx":283
  *         """
  * 
  *         self.cancel_amount = self.amount - self.trade_amount             # <<<<<<<<<<<<<<
  *         if self.trade_amount == 0:
  *             #
  */
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 277, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_amount); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 277, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyNumber_Subtract(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 277, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_cancel_amount, __pyx_t_3) < 0) __PYX_ERR(0, 277, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_v_self->cancel_amount = (__pyx_v_self->amount - __pyx_v_self->trade_amount);
 
-  /* "QAOrder.pyx":278
+  /* "QAOrder.pyx":284
  * 
  *         self.cancel_amount = self.amount - self.trade_amount
  *         if self.trade_amount == 0:             # <<<<<<<<<<<<<<
  *             #
  *             self._status = ORDER_STATUS.CANCEL_ALL
  */
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_amount); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 278, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_2 = __Pyx_PyInt_EqObjC(__pyx_t_3, __pyx_int_0, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 278, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 278, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (__pyx_t_4) {
+  __pyx_t_1 = ((__pyx_v_self->trade_amount == 0.0) != 0);
+  if (__pyx_t_1) {
 
-    /* "QAOrder.pyx":280
+    /* "QAOrder.pyx":286
  *         if self.trade_amount == 0:
  *             #
  *             self._status = ORDER_STATUS.CANCEL_ALL             # <<<<<<<<<<<<<<
  *         else:
  *             #
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 280, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 286, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_CANCEL_ALL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 280, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_CANCEL_ALL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 286, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    if (!(likely(PyString_CheckExact(__pyx_t_3))||((__pyx_t_3) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_3)->tp_name), 0))) __PYX_ERR(0, 280, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_t_3))||((__pyx_t_3) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_3)->tp_name), 0))) __PYX_ERR(0, 286, __pyx_L1_error)
     __Pyx_GIVEREF(__pyx_t_3);
     __Pyx_GOTREF(__pyx_v_self->_status);
     __Pyx_DECREF(__pyx_v_self->_status);
     __pyx_v_self->_status = ((PyObject*)__pyx_t_3);
     __pyx_t_3 = 0;
 
-    /* "QAOrder.pyx":278
+    /* "QAOrder.pyx":284
  * 
  *         self.cancel_amount = self.amount - self.trade_amount
  *         if self.trade_amount == 0:             # <<<<<<<<<<<<<<
@@ -4012,7 +3962,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_8cancel(struct __pyx_obj_7QAOrder_Q
     goto __pyx_L3;
   }
 
-  /* "QAOrder.pyx":283
+  /* "QAOrder.pyx":289
  *         else:
  *             #
  *             self._status = ORDER_STATUS.CANCEL_PART             # <<<<<<<<<<<<<<
@@ -4020,12 +3970,12 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_8cancel(struct __pyx_obj_7QAOrder_Q
  *     def failed(self, reason=None):
  */
   /*else*/ {
-    __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 283, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 289, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_CANCEL_PART); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 283, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_CANCEL_PART); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 289, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    if (!(likely(PyString_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_2)->tp_name), 0))) __PYX_ERR(0, 283, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_2)->tp_name), 0))) __PYX_ERR(0, 289, __pyx_L1_error)
     __Pyx_GIVEREF(__pyx_t_2);
     __Pyx_GOTREF(__pyx_v_self->_status);
     __Pyx_DECREF(__pyx_v_self->_status);
@@ -4034,7 +3984,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_8cancel(struct __pyx_obj_7QAOrder_Q
   }
   __pyx_L3:;
 
-  /* "QAOrder.pyx":270
+  /* "QAOrder.pyx":276
  *         self._status = ORDER_STATUS.NEW
  * 
  *     def cancel(self):             # <<<<<<<<<<<<<<
@@ -4046,7 +3996,6 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_8cancel(struct __pyx_obj_7QAOrder_Q
   __pyx_r = Py_None; __Pyx_INCREF(Py_None);
   goto __pyx_L0;
   __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_AddTraceback("QAOrder.QA_Order.cancel", __pyx_clineno, __pyx_lineno, __pyx_filename);
@@ -4057,7 +4006,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_8cancel(struct __pyx_obj_7QAOrder_Q
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":285
+/* "QAOrder.pyx":291
  *             self._status = ORDER_STATUS.CANCEL_PART
  * 
  *     def failed(self, reason=None):             # <<<<<<<<<<<<<<
@@ -4095,7 +4044,7 @@ static PyObject *__pyx_pw_7QAOrder_8QA_Order_11failed(PyObject *__pyx_v_self, Py
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "failed") < 0)) __PYX_ERR(0, 285, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "failed") < 0)) __PYX_ERR(0, 291, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -4109,7 +4058,7 @@ static PyObject *__pyx_pw_7QAOrder_8QA_Order_11failed(PyObject *__pyx_v_self, Py
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("failed", 0, 0, 1, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 285, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("failed", 0, 0, 1, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 291, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("QAOrder.QA_Order.failed", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -4129,38 +4078,42 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_10failed(struct __pyx_obj_7QAOrder_
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("failed", 0);
 
-  /* "QAOrder.pyx":292
+  /* "QAOrder.pyx":298
  *         """
  *         # (////)
  *         self._status = ORDER_STATUS.FAILED             # <<<<<<<<<<<<<<
  *         self.reason = str(reason)
  * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 292, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 298, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_FAILED); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 292, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_FAILED); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 298, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (!(likely(PyString_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_2)->tp_name), 0))) __PYX_ERR(0, 292, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_2)->tp_name), 0))) __PYX_ERR(0, 298, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_2);
   __Pyx_GOTREF(__pyx_v_self->_status);
   __Pyx_DECREF(__pyx_v_self->_status);
   __pyx_v_self->_status = ((PyObject*)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "QAOrder.pyx":293
+  /* "QAOrder.pyx":299
  *         # (////)
  *         self._status = ORDER_STATUS.FAILED
  *         self.reason = str(reason)             # <<<<<<<<<<<<<<
  * 
  *     def trade(self, trade_id, trade_price, trade_amount, trade_time):
  */
-  __pyx_t_2 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_reason); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 293, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_reason); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 299, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_reason, __pyx_t_2) < 0) __PYX_ERR(0, 293, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  if (!(likely(PyString_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_2)->tp_name), 0))) __PYX_ERR(0, 299, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_2);
+  __Pyx_GOTREF(__pyx_v_self->reason);
+  __Pyx_DECREF(__pyx_v_self->reason);
+  __pyx_v_self->reason = ((PyObject*)__pyx_t_2);
+  __pyx_t_2 = 0;
 
-  /* "QAOrder.pyx":285
+  /* "QAOrder.pyx":291
  *             self._status = ORDER_STATUS.CANCEL_PART
  * 
  *     def failed(self, reason=None):             # <<<<<<<<<<<<<<
@@ -4182,7 +4135,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_10failed(struct __pyx_obj_7QAOrder_
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":295
+/* "QAOrder.pyx":301
  *         self.reason = str(reason)
  * 
  *     def trade(self, trade_id, trade_price, trade_amount, trade_time):             # <<<<<<<<<<<<<<
@@ -4228,23 +4181,23 @@ static PyObject *__pyx_pw_7QAOrder_8QA_Order_13trade(PyObject *__pyx_v_self, PyO
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_trade_price)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("trade", 1, 4, 4, 1); __PYX_ERR(0, 295, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("trade", 1, 4, 4, 1); __PYX_ERR(0, 301, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_trade_amount)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("trade", 1, 4, 4, 2); __PYX_ERR(0, 295, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("trade", 1, 4, 4, 2); __PYX_ERR(0, 301, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_trade_time)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("trade", 1, 4, 4, 3); __PYX_ERR(0, 295, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("trade", 1, 4, 4, 3); __PYX_ERR(0, 301, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "trade") < 0)) __PYX_ERR(0, 295, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "trade") < 0)) __PYX_ERR(0, 301, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -4261,7 +4214,7 @@ static PyObject *__pyx_pw_7QAOrder_8QA_Order_13trade(PyObject *__pyx_v_self, PyO
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("trade", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 295, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("trade", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 301, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("QAOrder.QA_Order.trade", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -4283,7 +4236,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
   PyObject *__pyx_t_4 = NULL;
   int __pyx_t_5;
   int __pyx_t_6;
-  PyObject *__pyx_t_7 = NULL;
+  float __pyx_t_7;
   PyObject *__pyx_t_8 = NULL;
   int __pyx_t_9;
   PyObject *__pyx_t_10 = NULL;
@@ -4293,37 +4246,37 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
   __Pyx_INCREF(__pyx_v_trade_amount);
   __Pyx_INCREF(__pyx_v_trade_time);
 
-  /* "QAOrder.pyx":301
+  /* "QAOrder.pyx":307
  *             amount {[type]} -- [description]
  *         """
  *         if self.status in [ORDER_STATUS.SUCCESS_PART, ORDER_STATUS.QUEUED]:             # <<<<<<<<<<<<<<
  *             trade_amount = int(trade_amount)
  *             trade_id = str(trade_id)
  */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_status_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 301, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_status_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 307, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 301, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 307, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_SUCCESS_PART); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 301, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_SUCCESS_PART); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 307, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = PyObject_RichCompare(__pyx_t_1, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 301, __pyx_L1_error)
+  __pyx_t_3 = PyObject_RichCompare(__pyx_t_1, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 307, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 301, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 307, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   if (!__pyx_t_5) {
   } else {
     __pyx_t_2 = __pyx_t_5;
     goto __pyx_L4_bool_binop_done;
   }
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 301, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 307, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_QUEUED); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 301, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_QUEUED); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 307, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = PyObject_RichCompare(__pyx_t_1, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 301, __pyx_L1_error)
+  __pyx_t_3 = PyObject_RichCompare(__pyx_t_1, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 307, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 301, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 307, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_t_2 = __pyx_t_5;
   __pyx_L4_bool_binop_done:;
@@ -4331,62 +4284,62 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
   __pyx_t_5 = (__pyx_t_2 != 0);
   if (likely(__pyx_t_5)) {
 
-    /* "QAOrder.pyx":302
+    /* "QAOrder.pyx":308
  *         """
  *         if self.status in [ORDER_STATUS.SUCCESS_PART, ORDER_STATUS.QUEUED]:
  *             trade_amount = int(trade_amount)             # <<<<<<<<<<<<<<
  *             trade_id = str(trade_id)
  * 
  */
-    __pyx_t_1 = __Pyx_PyNumber_Int(__pyx_v_trade_amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 302, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyNumber_Int(__pyx_v_trade_amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 308, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF_SET(__pyx_v_trade_amount, __pyx_t_1);
     __pyx_t_1 = 0;
 
-    /* "QAOrder.pyx":303
+    /* "QAOrder.pyx":309
  *         if self.status in [ORDER_STATUS.SUCCESS_PART, ORDER_STATUS.QUEUED]:
  *             trade_amount = int(trade_amount)
  *             trade_id = str(trade_id)             # <<<<<<<<<<<<<<
  * 
  *             if trade_amount < 1:
  */
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_trade_id); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 303, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_trade_id); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 309, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF_SET(__pyx_v_trade_id, __pyx_t_1);
     __pyx_t_1 = 0;
 
-    /* "QAOrder.pyx":305
+    /* "QAOrder.pyx":311
  *             trade_id = str(trade_id)
  * 
  *             if trade_amount < 1:             # <<<<<<<<<<<<<<
  * 
  *                 self._status = ORDER_STATUS.NEXT
  */
-    __pyx_t_1 = PyObject_RichCompare(__pyx_v_trade_amount, __pyx_int_1, Py_LT); __Pyx_XGOTREF(__pyx_t_1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 305, __pyx_L1_error)
-    __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 305, __pyx_L1_error)
+    __pyx_t_1 = PyObject_RichCompare(__pyx_v_trade_amount, __pyx_int_1, Py_LT); __Pyx_XGOTREF(__pyx_t_1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 311, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 311, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     if (__pyx_t_5) {
 
-      /* "QAOrder.pyx":307
+      /* "QAOrder.pyx":313
  *             if trade_amount < 1:
  * 
  *                 self._status = ORDER_STATUS.NEXT             # <<<<<<<<<<<<<<
  *             else:
  *                 if trade_id not in self.trade_id:
  */
-      __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 307, __pyx_L1_error)
+      __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 313, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_NEXT); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 307, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_NEXT); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 313, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      if (!(likely(PyString_CheckExact(__pyx_t_3))||((__pyx_t_3) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_3)->tp_name), 0))) __PYX_ERR(0, 307, __pyx_L1_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_3))||((__pyx_t_3) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_3)->tp_name), 0))) __PYX_ERR(0, 313, __pyx_L1_error)
       __Pyx_GIVEREF(__pyx_t_3);
       __Pyx_GOTREF(__pyx_v_self->_status);
       __Pyx_DECREF(__pyx_v_self->_status);
       __pyx_v_self->_status = ((PyObject*)__pyx_t_3);
       __pyx_t_3 = 0;
 
-      /* "QAOrder.pyx":305
+      /* "QAOrder.pyx":311
  *             trade_id = str(trade_id)
  * 
  *             if trade_amount < 1:             # <<<<<<<<<<<<<<
@@ -4396,7 +4349,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
       goto __pyx_L6;
     }
 
-    /* "QAOrder.pyx":309
+    /* "QAOrder.pyx":315
  *                 self._status = ORDER_STATUS.NEXT
  *             else:
  *                 if trade_id not in self.trade_id:             # <<<<<<<<<<<<<<
@@ -4404,35 +4357,35 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
  * 
  */
     /*else*/ {
-      __pyx_t_5 = (__Pyx_PySequence_ContainsTF(__pyx_v_trade_id, __pyx_v_self->trade_id, Py_NE)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 309, __pyx_L1_error)
+      __pyx_t_5 = (__Pyx_PySequence_ContainsTF(__pyx_v_trade_id, __pyx_v_self->trade_id, Py_NE)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 315, __pyx_L1_error)
       __pyx_t_2 = (__pyx_t_5 != 0);
       if (__pyx_t_2) {
 
-        /* "QAOrder.pyx":310
+        /* "QAOrder.pyx":316
  *             else:
  *                 if trade_id not in self.trade_id:
  *                     trade_price = float(trade_price)             # <<<<<<<<<<<<<<
  * 
  *                     trade_time = str(trade_time)
  */
-        __pyx_t_3 = __Pyx_PyNumber_Float(__pyx_v_trade_price); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 310, __pyx_L1_error)
+        __pyx_t_3 = __Pyx_PyNumber_Float(__pyx_v_trade_price); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 316, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_DECREF_SET(__pyx_v_trade_price, __pyx_t_3);
         __pyx_t_3 = 0;
 
-        /* "QAOrder.pyx":312
+        /* "QAOrder.pyx":318
  *                     trade_price = float(trade_price)
  * 
  *                     trade_time = str(trade_time)             # <<<<<<<<<<<<<<
  * 
  *                     self.trade_id.append(trade_id)
  */
-        __pyx_t_3 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_trade_time); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 312, __pyx_L1_error)
+        __pyx_t_3 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_trade_time); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 318, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_DECREF_SET(__pyx_v_trade_time, __pyx_t_3);
         __pyx_t_3 = 0;
 
-        /* "QAOrder.pyx":314
+        /* "QAOrder.pyx":320
  *                     trade_time = str(trade_time)
  * 
  *                     self.trade_id.append(trade_id)             # <<<<<<<<<<<<<<
@@ -4441,99 +4394,95 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
  */
         if (unlikely(__pyx_v_self->trade_id == Py_None)) {
           PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "append");
-          __PYX_ERR(0, 314, __pyx_L1_error)
+          __PYX_ERR(0, 320, __pyx_L1_error)
         }
-        __pyx_t_6 = __Pyx_PyList_Append(__pyx_v_self->trade_id, __pyx_v_trade_id); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 314, __pyx_L1_error)
+        __pyx_t_6 = __Pyx_PyList_Append(__pyx_v_self->trade_id, __pyx_v_trade_id); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 320, __pyx_L1_error)
 
-        /* "QAOrder.pyx":316
+        /* "QAOrder.pyx":322
  *                     self.trade_id.append(trade_id)
  *                     self.trade_price = (
  *                         self.trade_price * self.trade_amount +             # <<<<<<<<<<<<<<
  *                         trade_price * trade_amount
  *                     ) / (
  */
-        __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_price); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 316, __pyx_L1_error)
+        __pyx_t_3 = PyFloat_FromDouble((__pyx_v_self->trade_price * __pyx_v_self->trade_amount)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 322, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
-        __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 316, __pyx_L1_error)
-        __Pyx_GOTREF(__pyx_t_1);
-        __pyx_t_4 = PyNumber_Multiply(__pyx_t_3, __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 316, __pyx_L1_error)
-        __Pyx_GOTREF(__pyx_t_4);
-        __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-        /* "QAOrder.pyx":317
+        /* "QAOrder.pyx":323
  *                     self.trade_price = (
  *                         self.trade_price * self.trade_amount +
  *                         trade_price * trade_amount             # <<<<<<<<<<<<<<
  *                     ) / (
  *                         self.trade_amount + trade_amount
  */
-        __pyx_t_1 = PyNumber_Multiply(__pyx_v_trade_price, __pyx_v_trade_amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 317, __pyx_L1_error)
+        __pyx_t_1 = PyNumber_Multiply(__pyx_v_trade_price, __pyx_v_trade_amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 323, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_1);
 
-        /* "QAOrder.pyx":316
+        /* "QAOrder.pyx":322
  *                     self.trade_id.append(trade_id)
  *                     self.trade_price = (
  *                         self.trade_price * self.trade_amount +             # <<<<<<<<<<<<<<
  *                         trade_price * trade_amount
  *                     ) / (
  */
-        __pyx_t_3 = PyNumber_Add(__pyx_t_4, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 316, __pyx_L1_error)
-        __Pyx_GOTREF(__pyx_t_3);
-        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __pyx_t_4 = PyNumber_Add(__pyx_t_3, __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 322, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-        /* "QAOrder.pyx":319
+        /* "QAOrder.pyx":325
  *                         trade_price * trade_amount
  *                     ) / (
  *                         self.trade_amount + trade_amount             # <<<<<<<<<<<<<<
  *                     )
  *                     self.trade_amount += trade_amount
  */
-        __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 319, __pyx_L1_error)
+        __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->trade_amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 325, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_1);
-        __pyx_t_4 = PyNumber_Add(__pyx_t_1, __pyx_v_trade_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 319, __pyx_L1_error)
-        __Pyx_GOTREF(__pyx_t_4);
+        __pyx_t_3 = PyNumber_Add(__pyx_t_1, __pyx_v_trade_amount); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 325, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_3);
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-        /* "QAOrder.pyx":318
+        /* "QAOrder.pyx":324
  *                         self.trade_price * self.trade_amount +
  *                         trade_price * trade_amount
  *                     ) / (             # <<<<<<<<<<<<<<
  *                         self.trade_amount + trade_amount
  *                     )
  */
-        __pyx_t_1 = __Pyx_PyNumber_Divide(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 318, __pyx_L1_error)
+        __pyx_t_1 = __Pyx_PyNumber_Divide(__pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 324, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_1);
-        __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+        __pyx_t_7 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_7 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 324, __pyx_L1_error)
+        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-        /* "QAOrder.pyx":315
+        /* "QAOrder.pyx":321
  * 
  *                     self.trade_id.append(trade_id)
  *                     self.trade_price = (             # <<<<<<<<<<<<<<
  *                         self.trade_price * self.trade_amount +
  *                         trade_price * trade_amount
  */
-        if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_price, __pyx_t_1) < 0) __PYX_ERR(0, 315, __pyx_L1_error)
-        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+        __pyx_v_self->trade_price = __pyx_t_7;
 
-        /* "QAOrder.pyx":321
+        /* "QAOrder.pyx":327
  *                         self.trade_amount + trade_amount
  *                     )
  *                     self.trade_amount += trade_amount             # <<<<<<<<<<<<<<
  *                     self.trade_time.append(trade_time)
  *                     self.callback(
  */
-        __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 321, __pyx_L1_error)
+        __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->trade_amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 327, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_1);
-        __pyx_t_4 = PyNumber_InPlaceAdd(__pyx_t_1, __pyx_v_trade_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 321, __pyx_L1_error)
-        __Pyx_GOTREF(__pyx_t_4);
+        __pyx_t_3 = PyNumber_InPlaceAdd(__pyx_t_1, __pyx_v_trade_amount); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 327, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_3);
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-        if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_amount, __pyx_t_4) < 0) __PYX_ERR(0, 321, __pyx_L1_error)
-        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __pyx_t_7 = __pyx_PyFloat_AsFloat(__pyx_t_3); if (unlikely((__pyx_t_7 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 327, __pyx_L1_error)
+        __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+        __pyx_v_self->trade_amount = __pyx_t_7;
 
-        /* "QAOrder.pyx":322
+        /* "QAOrder.pyx":328
  *                     )
  *                     self.trade_amount += trade_amount
  *                     self.trade_time.append(trade_time)             # <<<<<<<<<<<<<<
@@ -4542,31 +4491,21 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
  */
         if (unlikely(__pyx_v_self->trade_time == Py_None)) {
           PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "append");
-          __PYX_ERR(0, 322, __pyx_L1_error)
+          __PYX_ERR(0, 328, __pyx_L1_error)
         }
-        __pyx_t_6 = __Pyx_PyList_Append(__pyx_v_self->trade_time, __pyx_v_trade_time); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 322, __pyx_L1_error)
+        __pyx_t_6 = __Pyx_PyList_Append(__pyx_v_self->trade_time, __pyx_v_trade_time); if (unlikely(__pyx_t_6 == ((int)-1))) __PYX_ERR(0, 328, __pyx_L1_error)
 
-        /* "QAOrder.pyx":327
- *                         trade_id,
- *                         self.order_id,
- *                         self.realorder_id,             # <<<<<<<<<<<<<<
- *                         trade_price,
- *                         trade_amount,
- */
-        __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_realorder_id); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 327, __pyx_L1_error)
-        __Pyx_GOTREF(__pyx_t_1);
-
-        /* "QAOrder.pyx":330
+        /* "QAOrder.pyx":336
  *                         trade_price,
  *                         trade_amount,
  *                         self.towards,             # <<<<<<<<<<<<<<
  *                         trade_time
  *                     )
  */
-        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_self->towards); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 330, __pyx_L1_error)
-        __Pyx_GOTREF(__pyx_t_3);
+        __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_self->towards); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 336, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_1);
 
-        /* "QAOrder.pyx":331
+        /* "QAOrder.pyx":337
  *                         trade_amount,
  *                         self.towards,
  *                         trade_time             # <<<<<<<<<<<<<<
@@ -4574,40 +4513,38 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
  *                 else:
  */
         __Pyx_INCREF(__pyx_v_self->callback);
-        __pyx_t_7 = __pyx_v_self->callback; __pyx_t_8 = NULL;
+        __pyx_t_4 = __pyx_v_self->callback; __pyx_t_8 = NULL;
         __pyx_t_9 = 0;
-        if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_7))) {
-          __pyx_t_8 = PyMethod_GET_SELF(__pyx_t_7);
+        if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
+          __pyx_t_8 = PyMethod_GET_SELF(__pyx_t_4);
           if (likely(__pyx_t_8)) {
-            PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_7);
+            PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
             __Pyx_INCREF(__pyx_t_8);
             __Pyx_INCREF(function);
-            __Pyx_DECREF_SET(__pyx_t_7, function);
+            __Pyx_DECREF_SET(__pyx_t_4, function);
             __pyx_t_9 = 1;
           }
         }
         #if CYTHON_FAST_PYCALL
-        if (PyFunction_Check(__pyx_t_7)) {
-          PyObject *__pyx_temp[9] = {__pyx_t_8, __pyx_v_self->code, __pyx_v_trade_id, __pyx_v_self->order_id, __pyx_t_1, __pyx_v_trade_price, __pyx_v_trade_amount, __pyx_t_3, __pyx_v_trade_time};
-          __pyx_t_4 = __Pyx_PyFunction_FastCall(__pyx_t_7, __pyx_temp+1-__pyx_t_9, 8+__pyx_t_9); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 323, __pyx_L1_error)
+        if (PyFunction_Check(__pyx_t_4)) {
+          PyObject *__pyx_temp[9] = {__pyx_t_8, __pyx_v_self->code, __pyx_v_trade_id, __pyx_v_self->order_id, __pyx_v_self->realorder_id, __pyx_v_trade_price, __pyx_v_trade_amount, __pyx_t_1, __pyx_v_trade_time};
+          __pyx_t_3 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_9, 8+__pyx_t_9); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 329, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-          __Pyx_GOTREF(__pyx_t_4);
+          __Pyx_GOTREF(__pyx_t_3);
           __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-          __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         } else
         #endif
         #if CYTHON_FAST_PYCCALL
-        if (__Pyx_PyFastCFunction_Check(__pyx_t_7)) {
-          PyObject *__pyx_temp[9] = {__pyx_t_8, __pyx_v_self->code, __pyx_v_trade_id, __pyx_v_self->order_id, __pyx_t_1, __pyx_v_trade_price, __pyx_v_trade_amount, __pyx_t_3, __pyx_v_trade_time};
-          __pyx_t_4 = __Pyx_PyCFunction_FastCall(__pyx_t_7, __pyx_temp+1-__pyx_t_9, 8+__pyx_t_9); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 323, __pyx_L1_error)
+        if (__Pyx_PyFastCFunction_Check(__pyx_t_4)) {
+          PyObject *__pyx_temp[9] = {__pyx_t_8, __pyx_v_self->code, __pyx_v_trade_id, __pyx_v_self->order_id, __pyx_v_self->realorder_id, __pyx_v_trade_price, __pyx_v_trade_amount, __pyx_t_1, __pyx_v_trade_time};
+          __pyx_t_3 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_9, 8+__pyx_t_9); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 329, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-          __Pyx_GOTREF(__pyx_t_4);
+          __Pyx_GOTREF(__pyx_t_3);
           __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-          __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         } else
         #endif
         {
-          __pyx_t_10 = PyTuple_New(8+__pyx_t_9); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 323, __pyx_L1_error)
+          __pyx_t_10 = PyTuple_New(8+__pyx_t_9); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 329, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_10);
           if (__pyx_t_8) {
             __Pyx_GIVEREF(__pyx_t_8); PyTuple_SET_ITEM(__pyx_t_10, 0, __pyx_t_8); __pyx_t_8 = NULL;
@@ -4621,29 +4558,29 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
           __Pyx_INCREF(__pyx_v_self->order_id);
           __Pyx_GIVEREF(__pyx_v_self->order_id);
           PyTuple_SET_ITEM(__pyx_t_10, 2+__pyx_t_9, __pyx_v_self->order_id);
-          __Pyx_GIVEREF(__pyx_t_1);
-          PyTuple_SET_ITEM(__pyx_t_10, 3+__pyx_t_9, __pyx_t_1);
+          __Pyx_INCREF(__pyx_v_self->realorder_id);
+          __Pyx_GIVEREF(__pyx_v_self->realorder_id);
+          PyTuple_SET_ITEM(__pyx_t_10, 3+__pyx_t_9, __pyx_v_self->realorder_id);
           __Pyx_INCREF(__pyx_v_trade_price);
           __Pyx_GIVEREF(__pyx_v_trade_price);
           PyTuple_SET_ITEM(__pyx_t_10, 4+__pyx_t_9, __pyx_v_trade_price);
           __Pyx_INCREF(__pyx_v_trade_amount);
           __Pyx_GIVEREF(__pyx_v_trade_amount);
           PyTuple_SET_ITEM(__pyx_t_10, 5+__pyx_t_9, __pyx_v_trade_amount);
-          __Pyx_GIVEREF(__pyx_t_3);
-          PyTuple_SET_ITEM(__pyx_t_10, 6+__pyx_t_9, __pyx_t_3);
+          __Pyx_GIVEREF(__pyx_t_1);
+          PyTuple_SET_ITEM(__pyx_t_10, 6+__pyx_t_9, __pyx_t_1);
           __Pyx_INCREF(__pyx_v_trade_time);
           __Pyx_GIVEREF(__pyx_v_trade_time);
           PyTuple_SET_ITEM(__pyx_t_10, 7+__pyx_t_9, __pyx_v_trade_time);
           __pyx_t_1 = 0;
-          __pyx_t_3 = 0;
-          __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_7, __pyx_t_10, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 323, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_4);
+          __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_10, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 329, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_3);
           __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
         }
-        __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-        /* "QAOrder.pyx":309
+        /* "QAOrder.pyx":315
  *                 self._status = ORDER_STATUS.NEXT
  *             else:
  *                 if trade_id not in self.trade_id:             # <<<<<<<<<<<<<<
@@ -4653,7 +4590,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
         goto __pyx_L7;
       }
 
-      /* "QAOrder.pyx":334
+      /* "QAOrder.pyx":340
  *                     )
  *                 else:
  *                     pass             # <<<<<<<<<<<<<<
@@ -4666,7 +4603,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
     }
     __pyx_L6:;
 
-    /* "QAOrder.pyx":301
+    /* "QAOrder.pyx":307
  *             amount {[type]} -- [description]
  *         """
  *         if self.status in [ORDER_STATUS.SUCCESS_PART, ORDER_STATUS.QUEUED]:             # <<<<<<<<<<<<<<
@@ -4676,7 +4613,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
     goto __pyx_L3;
   }
 
-  /* "QAOrder.pyx":336
+  /* "QAOrder.pyx":342
  *                     pass
  *         else:
  *             raise RuntimeError(             # <<<<<<<<<<<<<<
@@ -4685,51 +4622,51 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
  */
   /*else*/ {
 
-    /* "QAOrder.pyx":337
+    /* "QAOrder.pyx":343
  *         else:
  *             raise RuntimeError(
  *                 'ORDER STATUS {} CANNNOT TRADE'.format(self.status)             # <<<<<<<<<<<<<<
  *             )
  * 
  */
-    __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_ORDER_STATUS_CANNNOT_TRADE, __pyx_n_s_format); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 337, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_10 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_status_2); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 337, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_ORDER_STATUS_CANNNOT_TRADE, __pyx_n_s_format); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 343, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_10 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_status_2); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 343, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_10);
-    __pyx_t_3 = NULL;
-    if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_7))) {
-      __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_7);
-      if (likely(__pyx_t_3)) {
-        PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_7);
-        __Pyx_INCREF(__pyx_t_3);
+    __pyx_t_1 = NULL;
+    if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
+      __pyx_t_1 = PyMethod_GET_SELF(__pyx_t_4);
+      if (likely(__pyx_t_1)) {
+        PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
+        __Pyx_INCREF(__pyx_t_1);
         __Pyx_INCREF(function);
-        __Pyx_DECREF_SET(__pyx_t_7, function);
+        __Pyx_DECREF_SET(__pyx_t_4, function);
       }
     }
-    __pyx_t_4 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_7, __pyx_t_3, __pyx_t_10) : __Pyx_PyObject_CallOneArg(__pyx_t_7, __pyx_t_10);
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __pyx_t_3 = (__pyx_t_1) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_1, __pyx_t_10) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_10);
+    __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-    if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 337, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 343, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-    /* "QAOrder.pyx":336
+    /* "QAOrder.pyx":342
  *                     pass
  *         else:
  *             raise RuntimeError(             # <<<<<<<<<<<<<<
  *                 'ORDER STATUS {} CANNNOT TRADE'.format(self.status)
  *             )
  */
-    __pyx_t_7 = __Pyx_PyObject_CallOneArg(__pyx_builtin_RuntimeError, __pyx_t_4); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 336, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_7);
+    __pyx_t_4 = __Pyx_PyObject_CallOneArg(__pyx_builtin_RuntimeError, __pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 342, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_Raise(__pyx_t_4, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_Raise(__pyx_t_7, 0, 0, 0);
-    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __PYX_ERR(0, 336, __pyx_L1_error)
+    __PYX_ERR(0, 342, __pyx_L1_error)
   }
   __pyx_L3:;
 
-  /* "QAOrder.pyx":295
+  /* "QAOrder.pyx":301
  *         self.reason = str(reason)
  * 
  *     def trade(self, trade_id, trade_price, trade_amount, trade_time):             # <<<<<<<<<<<<<<
@@ -4744,7 +4681,6 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_7);
   __Pyx_XDECREF(__pyx_t_8);
   __Pyx_XDECREF(__pyx_t_10);
   __Pyx_AddTraceback("QAOrder.QA_Order.trade", __pyx_clineno, __pyx_lineno, __pyx_filename);
@@ -4759,7 +4695,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade(struct __pyx_obj_7QAOrder_Q
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":340
+/* "QAOrder.pyx":346
  *             )
  * 
  *     def queued(self, realorder_id):             # <<<<<<<<<<<<<<
@@ -4787,35 +4723,42 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_14queued(struct __pyx_obj_7QAOrder_
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("queued", 0);
 
-  /* "QAOrder.pyx":341
+  /* "QAOrder.pyx":347
  * 
  *     def queued(self, realorder_id):
  *         self.realorder_id = realorder_id             # <<<<<<<<<<<<<<
  *         self._status = ORDER_STATUS.QUEUED
  * 
  */
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_realorder_id, __pyx_v_realorder_id) < 0) __PYX_ERR(0, 341, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_realorder_id))||((__pyx_v_realorder_id) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_realorder_id)->tp_name), 0))) __PYX_ERR(0, 347, __pyx_L1_error)
+  __pyx_t_1 = __pyx_v_realorder_id;
+  __Pyx_INCREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF(__pyx_v_self->realorder_id);
+  __Pyx_DECREF(__pyx_v_self->realorder_id);
+  __pyx_v_self->realorder_id = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":342
+  /* "QAOrder.pyx":348
  *     def queued(self, realorder_id):
  *         self.realorder_id = realorder_id
  *         self._status = ORDER_STATUS.QUEUED             # <<<<<<<<<<<<<<
  * 
  *     def settle(self):
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 342, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 348, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_QUEUED); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 342, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_QUEUED); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 348, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (!(likely(PyString_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_2)->tp_name), 0))) __PYX_ERR(0, 342, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_2)->tp_name), 0))) __PYX_ERR(0, 348, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_2);
   __Pyx_GOTREF(__pyx_v_self->_status);
   __Pyx_DECREF(__pyx_v_self->_status);
   __pyx_v_self->_status = ((PyObject*)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "QAOrder.pyx":340
+  /* "QAOrder.pyx":346
  *             )
  * 
  *     def queued(self, realorder_id):             # <<<<<<<<<<<<<<
@@ -4837,7 +4780,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_14queued(struct __pyx_obj_7QAOrder_
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":344
+/* "QAOrder.pyx":350
  *         self._status = ORDER_STATUS.QUEUED
  * 
  *     def settle(self):             # <<<<<<<<<<<<<<
@@ -4865,26 +4808,26 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_16settle(struct __pyx_obj_7QAOrder_
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("settle", 0);
 
-  /* "QAOrder.pyx":345
+  /* "QAOrder.pyx":351
  * 
  *     def settle(self):
  *         self._status = ORDER_STATUS.SETTLED             # <<<<<<<<<<<<<<
  * 
  *     def get(self, key, exception=None):
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 345, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 351, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_SETTLED); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 345, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_SETTLED); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 351, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (!(likely(PyString_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_2)->tp_name), 0))) __PYX_ERR(0, 345, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_2)->tp_name), 0))) __PYX_ERR(0, 351, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_2);
   __Pyx_GOTREF(__pyx_v_self->_status);
   __Pyx_DECREF(__pyx_v_self->_status);
   __pyx_v_self->_status = ((PyObject*)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "QAOrder.pyx":344
+  /* "QAOrder.pyx":350
  *         self._status = ORDER_STATUS.QUEUED
  * 
  *     def settle(self):             # <<<<<<<<<<<<<<
@@ -4906,7 +4849,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_16settle(struct __pyx_obj_7QAOrder_
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":347
+/* "QAOrder.pyx":353
  *         self._status = ORDER_STATUS.SETTLED
  * 
  *     def get(self, key, exception=None):             # <<<<<<<<<<<<<<
@@ -4950,7 +4893,7 @@ static PyObject *__pyx_pw_7QAOrder_8QA_Order_19get(PyObject *__pyx_v_self, PyObj
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "get") < 0)) __PYX_ERR(0, 347, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "get") < 0)) __PYX_ERR(0, 353, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -4966,7 +4909,7 @@ static PyObject *__pyx_pw_7QAOrder_8QA_Order_19get(PyObject *__pyx_v_self, PyObj
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 347, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 353, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("QAOrder.QA_Order.get", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -4995,7 +4938,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_18get(struct __pyx_obj_7QAOrder_QA_
   int __pyx_t_10;
   __Pyx_RefNannySetupContext("get", 0);
 
-  /* "QAOrder.pyx":348
+  /* "QAOrder.pyx":354
  * 
  *     def get(self, key, exception=None):
  *         try:             # <<<<<<<<<<<<<<
@@ -5011,7 +4954,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_18get(struct __pyx_obj_7QAOrder_QA_
     __Pyx_XGOTREF(__pyx_t_3);
     /*try:*/ {
 
-      /* "QAOrder.pyx":349
+      /* "QAOrder.pyx":355
  *     def get(self, key, exception=None):
  *         try:
  *             if key is None:             # <<<<<<<<<<<<<<
@@ -5022,16 +4965,16 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_18get(struct __pyx_obj_7QAOrder_QA_
       __pyx_t_5 = (__pyx_t_4 != 0);
       if (__pyx_t_5) {
 
-        /* "QAOrder.pyx":350
+        /* "QAOrder.pyx":356
  *         try:
  *             if key is None:
  *                 print("key is none , return none!")             # <<<<<<<<<<<<<<
  *                 return None
  *             return eval('self.{}'.format(key))
  */
-        if (__Pyx_PrintOne(0, __pyx_kp_s_key_is_none_return_none) < 0) __PYX_ERR(0, 350, __pyx_L3_error)
+        if (__Pyx_PrintOne(0, __pyx_kp_s_key_is_none_return_none) < 0) __PYX_ERR(0, 356, __pyx_L3_error)
 
-        /* "QAOrder.pyx":351
+        /* "QAOrder.pyx":357
  *             if key is None:
  *                 print("key is none , return none!")
  *                 return None             # <<<<<<<<<<<<<<
@@ -5042,7 +4985,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_18get(struct __pyx_obj_7QAOrder_QA_
         __pyx_r = Py_None; __Pyx_INCREF(Py_None);
         goto __pyx_L7_try_return;
 
-        /* "QAOrder.pyx":349
+        /* "QAOrder.pyx":355
  *     def get(self, key, exception=None):
  *         try:
  *             if key is None:             # <<<<<<<<<<<<<<
@@ -5051,7 +4994,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_18get(struct __pyx_obj_7QAOrder_QA_
  */
       }
 
-      /* "QAOrder.pyx":352
+      /* "QAOrder.pyx":358
  *                 print("key is none , return none!")
  *                 return None
  *             return eval('self.{}'.format(key))             # <<<<<<<<<<<<<<
@@ -5059,7 +5002,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_18get(struct __pyx_obj_7QAOrder_QA_
  *             return exception
  */
       __Pyx_XDECREF(__pyx_r);
-      __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_self, __pyx_n_s_format); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 352, __pyx_L3_error)
+      __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_self, __pyx_n_s_format); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 358, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_7);
       __pyx_t_8 = NULL;
       if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_7))) {
@@ -5073,26 +5016,26 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_18get(struct __pyx_obj_7QAOrder_QA_
       }
       __pyx_t_6 = (__pyx_t_8) ? __Pyx_PyObject_Call2Args(__pyx_t_7, __pyx_t_8, __pyx_v_key) : __Pyx_PyObject_CallOneArg(__pyx_t_7, __pyx_v_key);
       __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-      if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 352, __pyx_L3_error)
+      if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 358, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __pyx_t_7 = __Pyx_Globals(); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 352, __pyx_L3_error)
+      __pyx_t_7 = __Pyx_Globals(); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 358, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_7);
-      __pyx_t_8 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 352, __pyx_L3_error)
+      __pyx_t_8 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 358, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_8);
       if (__pyx_v_e) {
-        if (PyDict_SetItem(__pyx_t_8, __pyx_n_s_e, __pyx_v_e) < 0) __PYX_ERR(0, 352, __pyx_L3_error)
+        if (PyDict_SetItem(__pyx_t_8, __pyx_n_s_e, __pyx_v_e) < 0) __PYX_ERR(0, 358, __pyx_L3_error)
       }
       if (__pyx_v_exception) {
-        if (PyDict_SetItem(__pyx_t_8, __pyx_n_s_exception, __pyx_v_exception) < 0) __PYX_ERR(0, 352, __pyx_L3_error)
+        if (PyDict_SetItem(__pyx_t_8, __pyx_n_s_exception, __pyx_v_exception) < 0) __PYX_ERR(0, 358, __pyx_L3_error)
       }
       if (__pyx_v_key) {
-        if (PyDict_SetItem(__pyx_t_8, __pyx_n_s_key, __pyx_v_key) < 0) __PYX_ERR(0, 352, __pyx_L3_error)
+        if (PyDict_SetItem(__pyx_t_8, __pyx_n_s_key, __pyx_v_key) < 0) __PYX_ERR(0, 358, __pyx_L3_error)
       }
       if (((PyObject *)__pyx_v_self)) {
-        if (PyDict_SetItem(__pyx_t_8, __pyx_n_s_self_2, ((PyObject *)__pyx_v_self)) < 0) __PYX_ERR(0, 352, __pyx_L3_error)
+        if (PyDict_SetItem(__pyx_t_8, __pyx_n_s_self_2, ((PyObject *)__pyx_v_self)) < 0) __PYX_ERR(0, 358, __pyx_L3_error)
       }
-      __pyx_t_9 = PyTuple_New(3); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 352, __pyx_L3_error)
+      __pyx_t_9 = PyTuple_New(3); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 358, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_9);
       __Pyx_GIVEREF(__pyx_t_6);
       PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_t_6);
@@ -5103,14 +5046,14 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_18get(struct __pyx_obj_7QAOrder_QA_
       __pyx_t_6 = 0;
       __pyx_t_7 = 0;
       __pyx_t_8 = 0;
-      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_eval, __pyx_t_9, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 352, __pyx_L3_error)
+      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_eval, __pyx_t_9, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 358, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
       __pyx_r = __pyx_t_8;
       __pyx_t_8 = 0;
       goto __pyx_L7_try_return;
 
-      /* "QAOrder.pyx":348
+      /* "QAOrder.pyx":354
  * 
  *     def get(self, key, exception=None):
  *         try:             # <<<<<<<<<<<<<<
@@ -5124,7 +5067,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_18get(struct __pyx_obj_7QAOrder_QA_
     __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
 
-    /* "QAOrder.pyx":353
+    /* "QAOrder.pyx":359
  *                 return None
  *             return eval('self.{}'.format(key))
  *         except Exception as e:             # <<<<<<<<<<<<<<
@@ -5134,14 +5077,14 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_18get(struct __pyx_obj_7QAOrder_QA_
     __pyx_t_10 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_10) {
       __Pyx_AddTraceback("QAOrder.QA_Order.get", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_9, &__pyx_t_7) < 0) __PYX_ERR(0, 353, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_9, &__pyx_t_7) < 0) __PYX_ERR(0, 359, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_GOTREF(__pyx_t_9);
       __Pyx_GOTREF(__pyx_t_7);
       __Pyx_INCREF(__pyx_t_9);
       __pyx_v_e = __pyx_t_9;
 
-      /* "QAOrder.pyx":354
+      /* "QAOrder.pyx":360
  *             return eval('self.{}'.format(key))
  *         except Exception as e:
  *             return exception             # <<<<<<<<<<<<<<
@@ -5159,7 +5102,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_18get(struct __pyx_obj_7QAOrder_QA_
     goto __pyx_L5_except_error;
     __pyx_L5_except_error:;
 
-    /* "QAOrder.pyx":348
+    /* "QAOrder.pyx":354
  * 
  *     def get(self, key, exception=None):
  *         try:             # <<<<<<<<<<<<<<
@@ -5185,7 +5128,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_18get(struct __pyx_obj_7QAOrder_QA_
     goto __pyx_L0;
   }
 
-  /* "QAOrder.pyx":347
+  /* "QAOrder.pyx":353
  *         self._status = ORDER_STATUS.SETTLED
  * 
  *     def get(self, key, exception=None):             # <<<<<<<<<<<<<<
@@ -5208,7 +5151,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_18get(struct __pyx_obj_7QAOrder_QA_
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":358
+/* "QAOrder.pyx":364
  *     # todo var
  * 
  *     def callingback(self):             # <<<<<<<<<<<<<<
@@ -5236,17 +5179,17 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_20callingback(struct __pyx_obj_7QAO
   int __pyx_t_1;
   __Pyx_RefNannySetupContext("callingback", 0);
 
-  /* "QAOrder.pyx":365
+  /* "QAOrder.pyx":371
  *         """
  * 
  *         if self.callback:             # <<<<<<<<<<<<<<
  *             return self.callback
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_v_self->callback); if (unlikely(__pyx_t_1 < 0)) __PYX_ERR(0, 365, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_v_self->callback); if (unlikely(__pyx_t_1 < 0)) __PYX_ERR(0, 371, __pyx_L1_error)
   if (__pyx_t_1) {
 
-    /* "QAOrder.pyx":366
+    /* "QAOrder.pyx":372
  * 
  *         if self.callback:
  *             return self.callback             # <<<<<<<<<<<<<<
@@ -5258,7 +5201,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_20callingback(struct __pyx_obj_7QAO
     __pyx_r = __pyx_v_self->callback;
     goto __pyx_L0;
 
-    /* "QAOrder.pyx":365
+    /* "QAOrder.pyx":371
  *         """
  * 
  *         if self.callback:             # <<<<<<<<<<<<<<
@@ -5267,7 +5210,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_20callingback(struct __pyx_obj_7QAO
  */
   }
 
-  /* "QAOrder.pyx":358
+  /* "QAOrder.pyx":364
  *     # todo var
  * 
  *     def callingback(self):             # <<<<<<<<<<<<<<
@@ -5287,7 +5230,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_20callingback(struct __pyx_obj_7QAO
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":368
+/* "QAOrder.pyx":374
  *             return self.callback
  * 
  *     def info(self):             # <<<<<<<<<<<<<<
@@ -5315,7 +5258,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_22info(struct __pyx_obj_7QAOrder_QA
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("info", 0);
 
-  /* "QAOrder.pyx":372
+  /* "QAOrder.pyx":378
  *         :return:
  *         '''
  *         return vars(self)             # <<<<<<<<<<<<<<
@@ -5323,13 +5266,13 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_22info(struct __pyx_obj_7QAOrder_QA
  *     #  dfs
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_builtin_vars, ((PyObject *)__pyx_v_self)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 372, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_builtin_vars, ((PyObject *)__pyx_v_self)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 378, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "QAOrder.pyx":368
+  /* "QAOrder.pyx":374
  *             return self.callback
  * 
  *     def info(self):             # <<<<<<<<<<<<<<
@@ -5348,7 +5291,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_22info(struct __pyx_obj_7QAOrder_QA
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":375
+/* "QAOrder.pyx":381
  * 
  *     #  dfs
  *     def to_df(self):             # <<<<<<<<<<<<<<
@@ -5378,7 +5321,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_24to_df(struct __pyx_obj_7QAOrder_Q
   PyObject *__pyx_t_4 = NULL;
   __Pyx_RefNannySetupContext("to_df", 0);
 
-  /* "QAOrder.pyx":376
+  /* "QAOrder.pyx":382
  *     #  dfs
  *     def to_df(self):
  *         return pd.DataFrame([             # <<<<<<<<<<<<<<
@@ -5386,30 +5329,30 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_24to_df(struct __pyx_obj_7QAOrder_Q
  *         ])
  */
   __Pyx_XDECREF(__pyx_r);
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_pd); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 376, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_pd); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 382, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_DataFrame); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 376, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_DataFrame); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 382, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "QAOrder.pyx":377
+  /* "QAOrder.pyx":383
  *     def to_df(self):
  *         return pd.DataFrame([
  *             vars(self),             # <<<<<<<<<<<<<<
  *         ])
  * 
  */
-  __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_builtin_vars, ((PyObject *)__pyx_v_self)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 377, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_builtin_vars, ((PyObject *)__pyx_v_self)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 383, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
 
-  /* "QAOrder.pyx":376
+  /* "QAOrder.pyx":382
  *     #  dfs
  *     def to_df(self):
  *         return pd.DataFrame([             # <<<<<<<<<<<<<<
  *             vars(self),
  *         ])
  */
-  __pyx_t_4 = PyList_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 376, __pyx_L1_error)
+  __pyx_t_4 = PyList_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 382, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_GIVEREF(__pyx_t_2);
   PyList_SET_ITEM(__pyx_t_4, 0, __pyx_t_2);
@@ -5427,14 +5370,14 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_24to_df(struct __pyx_obj_7QAOrder_Q
   __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_2, __pyx_t_4) : __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4);
   __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 376, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 382, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "QAOrder.pyx":375
+  /* "QAOrder.pyx":381
  * 
  *     #  dfs
  *     def to_df(self):             # <<<<<<<<<<<<<<
@@ -5456,7 +5399,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_24to_df(struct __pyx_obj_7QAOrder_Q
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":382
+/* "QAOrder.pyx":388
  *     # todo var
  * 
  *     def to_dict(self):             # <<<<<<<<<<<<<<
@@ -5484,7 +5427,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_26to_dict(struct __pyx_obj_7QAOrder
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("to_dict", 0);
 
-  /* "QAOrder.pyx":387
+  /* "QAOrder.pyx":393
  *         :return: dict
  *         '''
  *         return vars(self)             # <<<<<<<<<<<<<<
@@ -5492,13 +5435,13 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_26to_dict(struct __pyx_obj_7QAOrder
  *     def to_otgdict(self):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_builtin_vars, ((PyObject *)__pyx_v_self)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 387, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_builtin_vars, ((PyObject *)__pyx_v_self)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 393, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "QAOrder.pyx":382
+  /* "QAOrder.pyx":388
  *     # todo var
  * 
  *     def to_dict(self):             # <<<<<<<<<<<<<<
@@ -5517,7 +5460,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_26to_dict(struct __pyx_obj_7QAOrder
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":389
+/* "QAOrder.pyx":395
  *         return vars(self)
  * 
  *     def to_otgdict(self):             # <<<<<<<<<<<<<<
@@ -5546,7 +5489,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_28to_otgdict(struct __pyx_obj_7QAOr
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("to_otgdict", 0);
 
-  /* "QAOrder.pyx":408
+  /* "QAOrder.pyx":414
  *             }
  *         """
  *         return {             # <<<<<<<<<<<<<<
@@ -5555,116 +5498,116 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_28to_otgdict(struct __pyx_obj_7QAOr
  */
   __Pyx_XDECREF(__pyx_r);
 
-  /* "QAOrder.pyx":409
+  /* "QAOrder.pyx":415
  *         """
  *         return {
  *             "aid": "insert_order",                  # //,             # <<<<<<<<<<<<<<
  *             # //, , (user1,  user_id  user1  user1.some_unit)
  *             "user_id": self.account_cookie,
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(12); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 409, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(12); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_aid, __pyx_n_s_insert_order) < 0) __PYX_ERR(0, 409, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_aid, __pyx_n_s_insert_order) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
 
-  /* "QAOrder.pyx":411
+  /* "QAOrder.pyx":417
  *             "aid": "insert_order",                  # //,
  *             # //, , (user1,  user_id  user1  user1.some_unit)
  *             "user_id": self.account_cookie,             # <<<<<<<<<<<<<<
  *             # //, , , 512
  *             "order_id": self.order_id,
  */
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_user_id, __pyx_v_self->account_cookie) < 0) __PYX_ERR(0, 409, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_user_id, __pyx_v_self->account_cookie) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
 
-  /* "QAOrder.pyx":413
+  /* "QAOrder.pyx":419
  *             "user_id": self.account_cookie,
  *             # //, , , 512
  *             "order_id": self.order_id,             # <<<<<<<<<<<<<<
  *             "exchange_id": self.exchange_id,  # //,
  *             "instrument_id": self.code,               # //,
  */
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_order_id, __pyx_v_self->order_id) < 0) __PYX_ERR(0, 409, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_order_id, __pyx_v_self->order_id) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
 
-  /* "QAOrder.pyx":414
+  /* "QAOrder.pyx":420
  *             # //, , , 512
  *             "order_id": self.order_id,
  *             "exchange_id": self.exchange_id,  # //,             # <<<<<<<<<<<<<<
  *             "instrument_id": self.code,               # //,
  *             "direction": self.direction,                      # //,
  */
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_exchange_id, __pyx_v_self->exchange_id) < 0) __PYX_ERR(0, 409, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_exchange_id, __pyx_v_self->exchange_id) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
 
-  /* "QAOrder.pyx":415
+  /* "QAOrder.pyx":421
  *             "order_id": self.order_id,
  *             "exchange_id": self.exchange_id,  # //,
  *             "instrument_id": self.code,               # //,             # <<<<<<<<<<<<<<
  *             "direction": self.direction,                      # //,
  *             # //, , ()
  */
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_instrument_id, __pyx_v_self->code) < 0) __PYX_ERR(0, 409, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_instrument_id, __pyx_v_self->code) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
 
-  /* "QAOrder.pyx":416
+  /* "QAOrder.pyx":422
  *             "exchange_id": self.exchange_id,  # //,
  *             "instrument_id": self.code,               # //,
  *             "direction": self.direction,                      # //,             # <<<<<<<<<<<<<<
  *             # //, , ()
  *             "offset":  self.offset,
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_direction); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 416, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_direction); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 422, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_direction, __pyx_t_2) < 0) __PYX_ERR(0, 409, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_direction, __pyx_t_2) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "QAOrder.pyx":418
+  /* "QAOrder.pyx":424
  *             "direction": self.direction,                      # //,
  *             # //, , ()
  *             "offset":  self.offset,             # <<<<<<<<<<<<<<
  *             "volume":  self.amount,                             # //,
  *             "price_type": self.order_model,  # //,
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 418, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 424, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_offset, __pyx_t_2) < 0) __PYX_ERR(0, 409, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_offset, __pyx_t_2) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "QAOrder.pyx":419
+  /* "QAOrder.pyx":425
  *             # //, , ()
  *             "offset":  self.offset,
  *             "volume":  self.amount,                             # //,             # <<<<<<<<<<<<<<
  *             "price_type": self.order_model,  # //,
  *             "limit_price": self.price,  # // price_type == LIMIT ,
  */
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_self->amount); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 419, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_self->amount); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 425, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_volume, __pyx_t_2) < 0) __PYX_ERR(0, 409, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_volume, __pyx_t_2) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "QAOrder.pyx":420
+  /* "QAOrder.pyx":426
  *             "offset":  self.offset,
  *             "volume":  self.amount,                             # //,
  *             "price_type": self.order_model,  # //,             # <<<<<<<<<<<<<<
  *             "limit_price": self.price,  # // price_type == LIMIT ,
  *             "volume_condition": "ANY",
  */
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_price_type, __pyx_v_self->order_model) < 0) __PYX_ERR(0, 409, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_price_type, __pyx_v_self->order_model) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
 
-  /* "QAOrder.pyx":421
+  /* "QAOrder.pyx":427
  *             "volume":  self.amount,                             # //,
  *             "price_type": self.order_model,  # //,
  *             "limit_price": self.price,  # // price_type == LIMIT ,             # <<<<<<<<<<<<<<
  *             "volume_condition": "ANY",
  *             "time_condition": "GFD",
  */
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_self->price); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 421, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_self->price); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 427, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_limit_price, __pyx_t_2) < 0) __PYX_ERR(0, 409, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_limit_price, __pyx_t_2) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_volume_condition, __pyx_n_s_ANY) < 0) __PYX_ERR(0, 409, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_time_condition, __pyx_n_s_GFD) < 0) __PYX_ERR(0, 409, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_volume_condition, __pyx_n_s_ANY) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_time_condition, __pyx_n_s_GFD) < 0) __PYX_ERR(0, 415, __pyx_L1_error)
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "QAOrder.pyx":389
+  /* "QAOrder.pyx":395
  *         return vars(self)
  * 
  *     def to_otgdict(self):             # <<<<<<<<<<<<<<
@@ -5684,7 +5627,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_28to_otgdict(struct __pyx_obj_7QAOr
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":426
+/* "QAOrder.pyx":432
  *         }
  * 
  *     def to_qatradegatway(self):             # <<<<<<<<<<<<<<
@@ -5716,18 +5659,18 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_30to_qatradegatway(struct __pyx_obj
   PyObject *__pyx_t_5 = NULL;
   __Pyx_RefNannySetupContext("to_qatradegatway", 0);
 
-  /* "QAOrder.pyx":428
+  /* "QAOrder.pyx":434
  *     def to_qatradegatway(self):
  * 
  *         direction = 'BUY' if self.direction > 0 else 'SELL'             # <<<<<<<<<<<<<<
  *         return {
  *             'topic': 'sendorder',
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_direction); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 428, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_direction); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 434, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyObject_RichCompare(__pyx_t_2, __pyx_int_0, Py_GT); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 428, __pyx_L1_error)
+  __pyx_t_3 = PyObject_RichCompare(__pyx_t_2, __pyx_int_0, Py_GT); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 434, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 428, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 434, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   if (__pyx_t_4) {
     __Pyx_INCREF(__pyx_n_s_BUY);
@@ -5739,7 +5682,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_30to_qatradegatway(struct __pyx_obj
   __pyx_v_direction = __pyx_t_1;
   __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":429
+  /* "QAOrder.pyx":435
  * 
  *         direction = 'BUY' if self.direction > 0 else 'SELL'
  *         return {             # <<<<<<<<<<<<<<
@@ -5748,52 +5691,52 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_30to_qatradegatway(struct __pyx_obj
  */
   __Pyx_XDECREF(__pyx_r);
 
-  /* "QAOrder.pyx":430
+  /* "QAOrder.pyx":436
  *         direction = 'BUY' if self.direction > 0 else 'SELL'
  *         return {
  *             'topic': 'sendorder',             # <<<<<<<<<<<<<<
  *             'account_cookie': self.account_cookie,
  *             'strategy_id': self.strategy,
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(11); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 430, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(11); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 436, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_topic, __pyx_n_s_sendorder) < 0) __PYX_ERR(0, 430, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_topic, __pyx_n_s_sendorder) < 0) __PYX_ERR(0, 436, __pyx_L1_error)
 
-  /* "QAOrder.pyx":431
+  /* "QAOrder.pyx":437
  *         return {
  *             'topic': 'sendorder',
  *             'account_cookie': self.account_cookie,             # <<<<<<<<<<<<<<
  *             'strategy_id': self.strategy,
  *             'order_direction': direction,
  */
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_account_cookie, __pyx_v_self->account_cookie) < 0) __PYX_ERR(0, 430, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_account_cookie, __pyx_v_self->account_cookie) < 0) __PYX_ERR(0, 436, __pyx_L1_error)
 
-  /* "QAOrder.pyx":432
+  /* "QAOrder.pyx":438
  *             'topic': 'sendorder',
  *             'account_cookie': self.account_cookie,
  *             'strategy_id': self.strategy,             # <<<<<<<<<<<<<<
  *             'order_direction': direction,
  *             'code': self.code.lower(),
  */
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_strategy_id, __pyx_v_self->strategy) < 0) __PYX_ERR(0, 430, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_strategy_id, __pyx_v_self->strategy) < 0) __PYX_ERR(0, 436, __pyx_L1_error)
 
-  /* "QAOrder.pyx":433
+  /* "QAOrder.pyx":439
  *             'account_cookie': self.account_cookie,
  *             'strategy_id': self.strategy,
  *             'order_direction': direction,             # <<<<<<<<<<<<<<
  *             'code': self.code.lower(),
  *             'price': self.price,
  */
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_order_direction, __pyx_v_direction) < 0) __PYX_ERR(0, 430, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_order_direction, __pyx_v_direction) < 0) __PYX_ERR(0, 436, __pyx_L1_error)
 
-  /* "QAOrder.pyx":434
+  /* "QAOrder.pyx":440
  *             'strategy_id': self.strategy,
  *             'order_direction': direction,
  *             'code': self.code.lower(),             # <<<<<<<<<<<<<<
  *             'price': self.price,
  *             'order_time': self.sending_time,
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self->code, __pyx_n_s_lower); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 434, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self->code, __pyx_n_s_lower); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 440, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_5 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -5807,41 +5750,41 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_30to_qatradegatway(struct __pyx_obj
   }
   __pyx_t_3 = (__pyx_t_5) ? __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_5) : __Pyx_PyObject_CallNoArg(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-  if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 434, __pyx_L1_error)
+  if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 440, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_code, __pyx_t_3) < 0) __PYX_ERR(0, 430, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_code, __pyx_t_3) < 0) __PYX_ERR(0, 436, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "QAOrder.pyx":435
+  /* "QAOrder.pyx":441
  *             'order_direction': direction,
  *             'code': self.code.lower(),
  *             'price': self.price,             # <<<<<<<<<<<<<<
  *             'order_time': self.sending_time,
  *             'exchange_id': self.get_exchange(self.code),
  */
-  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_self->price); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 435, __pyx_L1_error)
+  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_self->price); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 441, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_price, __pyx_t_3) < 0) __PYX_ERR(0, 430, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_price, __pyx_t_3) < 0) __PYX_ERR(0, 436, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "QAOrder.pyx":436
+  /* "QAOrder.pyx":442
  *             'code': self.code.lower(),
  *             'price': self.price,
  *             'order_time': self.sending_time,             # <<<<<<<<<<<<<<
  *             'exchange_id': self.get_exchange(self.code),
  *             'order_offset': self.offset,
  */
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_order_time, __pyx_v_self->sending_time) < 0) __PYX_ERR(0, 430, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_order_time, __pyx_v_self->sending_time) < 0) __PYX_ERR(0, 436, __pyx_L1_error)
 
-  /* "QAOrder.pyx":437
+  /* "QAOrder.pyx":443
  *             'price': self.price,
  *             'order_time': self.sending_time,
  *             'exchange_id': self.get_exchange(self.code),             # <<<<<<<<<<<<<<
  *             'order_offset': self.offset,
  *             'volume': self.amount,
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_get_exchange); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 437, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_get_exchange); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 443, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_5 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -5855,49 +5798,49 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_30to_qatradegatway(struct __pyx_obj
   }
   __pyx_t_3 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_5, __pyx_v_self->code) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_v_self->code);
   __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-  if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 437, __pyx_L1_error)
+  if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 443, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_exchange_id, __pyx_t_3) < 0) __PYX_ERR(0, 430, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_exchange_id, __pyx_t_3) < 0) __PYX_ERR(0, 436, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "QAOrder.pyx":438
+  /* "QAOrder.pyx":444
  *             'order_time': self.sending_time,
  *             'exchange_id': self.get_exchange(self.code),
  *             'order_offset': self.offset,             # <<<<<<<<<<<<<<
  *             'volume': self.amount,
  *             'order_id': self.order_id
  */
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 438, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 444, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_order_offset, __pyx_t_3) < 0) __PYX_ERR(0, 430, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_order_offset, __pyx_t_3) < 0) __PYX_ERR(0, 436, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "QAOrder.pyx":439
+  /* "QAOrder.pyx":445
  *             'exchange_id': self.get_exchange(self.code),
  *             'order_offset': self.offset,
  *             'volume': self.amount,             # <<<<<<<<<<<<<<
  *             'order_id': self.order_id
  *         }
  */
-  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_self->amount); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 439, __pyx_L1_error)
+  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_self->amount); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 445, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_volume, __pyx_t_3) < 0) __PYX_ERR(0, 430, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_volume, __pyx_t_3) < 0) __PYX_ERR(0, 436, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "QAOrder.pyx":440
+  /* "QAOrder.pyx":446
  *             'order_offset': self.offset,
  *             'volume': self.amount,
  *             'order_id': self.order_id             # <<<<<<<<<<<<<<
  *         }
  * 
  */
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_order_id, __pyx_v_self->order_id) < 0) __PYX_ERR(0, 430, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_order_id, __pyx_v_self->order_id) < 0) __PYX_ERR(0, 436, __pyx_L1_error)
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "QAOrder.pyx":426
+  /* "QAOrder.pyx":432
  *         }
  * 
  *     def to_qatradegatway(self):             # <<<<<<<<<<<<<<
@@ -5920,7 +5863,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_30to_qatradegatway(struct __pyx_obj
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":443
+/* "QAOrder.pyx":449
  *         }
  * 
  *     def from_otgformat(self, otgOrder):             # <<<<<<<<<<<<<<
@@ -5958,14 +5901,14 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   int __pyx_t_11;
   __Pyx_RefNannySetupContext("from_otgformat", 0);
 
-  /* "QAOrder.pyx":468
+  /* "QAOrder.pyx":474
  *         'last_msg': ''} # "" ()
  *         """
  *         self.order_id = otgOrder.get('order_id')             # <<<<<<<<<<<<<<
  *         self.account_cookie = otgOrder.get('user_id')
  *         self.exchange_id = otgOrder.get('exchange_id')
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 468, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 474, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -5979,24 +5922,24 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_1 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_3, __pyx_n_s_order_id) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_n_s_order_id);
   __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 468, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 474, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 468, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 474, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v_self->order_id);
   __Pyx_DECREF(__pyx_v_self->order_id);
   __pyx_v_self->order_id = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":469
+  /* "QAOrder.pyx":475
  *         """
  *         self.order_id = otgOrder.get('order_id')
  *         self.account_cookie = otgOrder.get('user_id')             # <<<<<<<<<<<<<<
  *         self.exchange_id = otgOrder.get('exchange_id')
  *         self.code = str(otgOrder.get('instrument_id')).upper()
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 469, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 475, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -6010,24 +5953,24 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_1 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_3, __pyx_n_s_user_id) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_n_s_user_id);
   __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 469, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 475, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 469, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 475, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v_self->account_cookie);
   __Pyx_DECREF(__pyx_v_self->account_cookie);
   __pyx_v_self->account_cookie = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":470
+  /* "QAOrder.pyx":476
  *         self.order_id = otgOrder.get('order_id')
  *         self.account_cookie = otgOrder.get('user_id')
  *         self.exchange_id = otgOrder.get('exchange_id')             # <<<<<<<<<<<<<<
  *         self.code = str(otgOrder.get('instrument_id')).upper()
  *         self.offset = otgOrder.get('offset')
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 470, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 476, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -6041,24 +5984,24 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_1 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_3, __pyx_n_s_exchange_id) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_n_s_exchange_id);
   __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 470, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 476, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 470, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 476, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v_self->exchange_id);
   __Pyx_DECREF(__pyx_v_self->exchange_id);
   __pyx_v_self->exchange_id = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":471
+  /* "QAOrder.pyx":477
  *         self.account_cookie = otgOrder.get('user_id')
  *         self.exchange_id = otgOrder.get('exchange_id')
  *         self.code = str(otgOrder.get('instrument_id')).upper()             # <<<<<<<<<<<<<<
  *         self.offset = otgOrder.get('offset')
  *         self.direction = otgOrder.get('direction')
  */
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 471, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 477, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_t_4 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_3))) {
@@ -6072,13 +6015,13 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_2 = (__pyx_t_4) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_4, __pyx_n_s_instrument_id) : __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_n_s_instrument_id);
   __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 471, __pyx_L1_error)
+  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 477, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 471, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 477, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_upper); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 471, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_upper); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 477, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_t_3 = NULL;
@@ -6093,24 +6036,24 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_1 = (__pyx_t_3) ? __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3) : __Pyx_PyObject_CallNoArg(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 471, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 477, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 471, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 477, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v_self->code);
   __Pyx_DECREF(__pyx_v_self->code);
   __pyx_v_self->code = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":472
+  /* "QAOrder.pyx":478
  *         self.exchange_id = otgOrder.get('exchange_id')
  *         self.code = str(otgOrder.get('instrument_id')).upper()
  *         self.offset = otgOrder.get('offset')             # <<<<<<<<<<<<<<
  *         self.direction = otgOrder.get('direction')
  *         self.towards = eval('ORDER_DIRECTION.{}_{}'.format(
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 472, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 478, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -6124,20 +6067,20 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_1 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_3, __pyx_n_s_offset) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_n_s_offset);
   __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 472, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 478, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_offset, __pyx_t_1) < 0) __PYX_ERR(0, 472, __pyx_L1_error)
+  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_offset, __pyx_t_1) < 0) __PYX_ERR(0, 478, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":473
+  /* "QAOrder.pyx":479
  *         self.code = str(otgOrder.get('instrument_id')).upper()
  *         self.offset = otgOrder.get('offset')
  *         self.direction = otgOrder.get('direction')             # <<<<<<<<<<<<<<
  *         self.towards = eval('ORDER_DIRECTION.{}_{}'.format(
  *             self.direction,
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 473, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 479, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -6151,40 +6094,40 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_1 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_3, __pyx_n_s_direction) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_n_s_direction);
   __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 473, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 479, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_direction, __pyx_t_1) < 0) __PYX_ERR(0, 473, __pyx_L1_error)
+  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_direction, __pyx_t_1) < 0) __PYX_ERR(0, 479, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":474
+  /* "QAOrder.pyx":480
  *         self.offset = otgOrder.get('offset')
  *         self.direction = otgOrder.get('direction')
  *         self.towards = eval('ORDER_DIRECTION.{}_{}'.format(             # <<<<<<<<<<<<<<
  *             self.direction,
  *             self.offset
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_ORDER_DIRECTION, __pyx_n_s_format); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 474, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_ORDER_DIRECTION, __pyx_n_s_format); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 480, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
 
-  /* "QAOrder.pyx":475
+  /* "QAOrder.pyx":481
  *         self.direction = otgOrder.get('direction')
  *         self.towards = eval('ORDER_DIRECTION.{}_{}'.format(
  *             self.direction,             # <<<<<<<<<<<<<<
  *             self.offset
  *         ))
  */
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_direction); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 475, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_direction); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 481, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
 
-  /* "QAOrder.pyx":476
+  /* "QAOrder.pyx":482
  *         self.towards = eval('ORDER_DIRECTION.{}_{}'.format(
  *             self.direction,
  *             self.offset             # <<<<<<<<<<<<<<
  *         ))
  *         self.amount = otgOrder.get('volume_orign')
  */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_offset); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 476, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_offset); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 482, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_5 = NULL;
   __pyx_t_6 = 0;
@@ -6201,7 +6144,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   #if CYTHON_FAST_PYCALL
   if (PyFunction_Check(__pyx_t_2)) {
     PyObject *__pyx_temp[3] = {__pyx_t_5, __pyx_t_3, __pyx_t_4};
-    __pyx_t_1 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 474, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 480, __pyx_L1_error)
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -6211,7 +6154,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   #if CYTHON_FAST_PYCCALL
   if (__Pyx_PyFastCFunction_Check(__pyx_t_2)) {
     PyObject *__pyx_temp[3] = {__pyx_t_5, __pyx_t_3, __pyx_t_4};
-    __pyx_t_1 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 474, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 480, __pyx_L1_error)
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -6219,7 +6162,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   } else
   #endif
   {
-    __pyx_t_7 = PyTuple_New(2+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 474, __pyx_L1_error)
+    __pyx_t_7 = PyTuple_New(2+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 480, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     if (__pyx_t_5) {
       __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_5); __pyx_t_5 = NULL;
@@ -6230,30 +6173,30 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
     PyTuple_SET_ITEM(__pyx_t_7, 1+__pyx_t_6, __pyx_t_4);
     __pyx_t_3 = 0;
     __pyx_t_4 = 0;
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_7, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 474, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_7, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 480, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   }
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "QAOrder.pyx":474
+  /* "QAOrder.pyx":480
  *         self.offset = otgOrder.get('offset')
  *         self.direction = otgOrder.get('direction')
  *         self.towards = eval('ORDER_DIRECTION.{}_{}'.format(             # <<<<<<<<<<<<<<
  *             self.direction,
  *             self.offset
  */
-  __pyx_t_2 = __Pyx_Globals(); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 474, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_Globals(); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 480, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_7 = __Pyx_PyDict_NewPresized(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 474, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyDict_NewPresized(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 480, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   if (__pyx_v_otgOrder) {
-    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_otgOrder, __pyx_v_otgOrder) < 0) __PYX_ERR(0, 474, __pyx_L1_error)
+    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_otgOrder, __pyx_v_otgOrder) < 0) __PYX_ERR(0, 480, __pyx_L1_error)
   }
   if (((PyObject *)__pyx_v_self)) {
-    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_self_2, ((PyObject *)__pyx_v_self)) < 0) __PYX_ERR(0, 474, __pyx_L1_error)
+    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_self_2, ((PyObject *)__pyx_v_self)) < 0) __PYX_ERR(0, 480, __pyx_L1_error)
   }
-  __pyx_t_4 = PyTuple_New(3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 474, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 480, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_GIVEREF(__pyx_t_1);
   PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_1);
@@ -6264,21 +6207,21 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   __pyx_t_1 = 0;
   __pyx_t_2 = 0;
   __pyx_t_7 = 0;
-  __pyx_t_7 = __Pyx_PyObject_Call(__pyx_builtin_eval, __pyx_t_4, NULL); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 474, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_Call(__pyx_builtin_eval, __pyx_t_4, NULL); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 480, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_7); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 474, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_7); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 480, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   __pyx_v_self->towards = __pyx_t_6;
 
-  /* "QAOrder.pyx":478
+  /* "QAOrder.pyx":484
  *             self.offset
  *         ))
  *         self.amount = otgOrder.get('volume_orign')             # <<<<<<<<<<<<<<
  *         self.trade_amount = self.amount - otgOrder.get('volume_left')
  *         self.price = otgOrder.get('limit_price')
  */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 478, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 484, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_2 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
@@ -6292,23 +6235,23 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_7 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_2, __pyx_n_s_volume_orign) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_n_s_volume_orign);
   __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 478, __pyx_L1_error)
+  if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 484, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_8 = __pyx_PyFloat_AsFloat(__pyx_t_7); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 478, __pyx_L1_error)
+  __pyx_t_8 = __pyx_PyFloat_AsFloat(__pyx_t_7); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 484, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   __pyx_v_self->amount = __pyx_t_8;
 
-  /* "QAOrder.pyx":479
+  /* "QAOrder.pyx":485
  *         ))
  *         self.amount = otgOrder.get('volume_orign')
  *         self.trade_amount = self.amount - otgOrder.get('volume_left')             # <<<<<<<<<<<<<<
  *         self.price = otgOrder.get('limit_price')
  *         self.order_model = eval(
  */
-  __pyx_t_7 = PyFloat_FromDouble(__pyx_v_self->amount); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 479, __pyx_L1_error)
+  __pyx_t_7 = PyFloat_FromDouble(__pyx_v_self->amount); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 485, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 479, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 485, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_1 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -6322,24 +6265,25 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_4 = (__pyx_t_1) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_1, __pyx_n_s_volume_left) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_n_s_volume_left);
   __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 479, __pyx_L1_error)
+  if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 485, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = PyNumber_Subtract(__pyx_t_7, __pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 479, __pyx_L1_error)
+  __pyx_t_2 = PyNumber_Subtract(__pyx_t_7, __pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 485, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_amount, __pyx_t_2) < 0) __PYX_ERR(0, 479, __pyx_L1_error)
+  __pyx_t_8 = __pyx_PyFloat_AsFloat(__pyx_t_2); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 485, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_v_self->trade_amount = __pyx_t_8;
 
-  /* "QAOrder.pyx":480
+  /* "QAOrder.pyx":486
  *         self.amount = otgOrder.get('volume_orign')
  *         self.trade_amount = self.amount - otgOrder.get('volume_left')
  *         self.price = otgOrder.get('limit_price')             # <<<<<<<<<<<<<<
  *         self.order_model = eval(
  *             'ORDER_MODEL.{}'.format(otgOrder.get('price_type'))
  */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 480, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 486, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_7 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
@@ -6353,23 +6297,23 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_2 = (__pyx_t_7) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_7, __pyx_n_s_limit_price) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_n_s_limit_price);
   __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 480, __pyx_L1_error)
+  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 486, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_8 = __pyx_PyFloat_AsFloat(__pyx_t_2); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 480, __pyx_L1_error)
+  __pyx_t_8 = __pyx_PyFloat_AsFloat(__pyx_t_2); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 486, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_v_self->price = __pyx_t_8;
 
-  /* "QAOrder.pyx":482
+  /* "QAOrder.pyx":488
  *         self.price = otgOrder.get('limit_price')
  *         self.order_model = eval(
  *             'ORDER_MODEL.{}'.format(otgOrder.get('price_type'))             # <<<<<<<<<<<<<<
  *         )
  *         self.time_condition = otgOrder.get('time_condition')
  */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_ORDER_MODEL, __pyx_n_s_format); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 482, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_ORDER_MODEL, __pyx_n_s_format); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 488, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 482, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 488, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_1))) {
@@ -6383,7 +6327,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_7 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_1, __pyx_t_3, __pyx_n_s_price_type) : __Pyx_PyObject_CallOneArg(__pyx_t_1, __pyx_n_s_price_type);
   __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 482, __pyx_L1_error)
+  if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 488, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_t_1 = NULL;
@@ -6399,28 +6343,28 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   __pyx_t_2 = (__pyx_t_1) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_1, __pyx_t_7) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_7);
   __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 482, __pyx_L1_error)
+  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 488, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "QAOrder.pyx":481
+  /* "QAOrder.pyx":487
  *         self.trade_amount = self.amount - otgOrder.get('volume_left')
  *         self.price = otgOrder.get('limit_price')
  *         self.order_model = eval(             # <<<<<<<<<<<<<<
  *             'ORDER_MODEL.{}'.format(otgOrder.get('price_type'))
  *         )
  */
-  __pyx_t_4 = __Pyx_Globals(); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 481, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_Globals(); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 487, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_7 = __Pyx_PyDict_NewPresized(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 481, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyDict_NewPresized(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 487, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   if (__pyx_v_otgOrder) {
-    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_otgOrder, __pyx_v_otgOrder) < 0) __PYX_ERR(0, 481, __pyx_L1_error)
+    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_otgOrder, __pyx_v_otgOrder) < 0) __PYX_ERR(0, 487, __pyx_L1_error)
   }
   if (((PyObject *)__pyx_v_self)) {
-    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_self_2, ((PyObject *)__pyx_v_self)) < 0) __PYX_ERR(0, 481, __pyx_L1_error)
+    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_self_2, ((PyObject *)__pyx_v_self)) < 0) __PYX_ERR(0, 487, __pyx_L1_error)
   }
-  __pyx_t_1 = PyTuple_New(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 481, __pyx_L1_error)
+  __pyx_t_1 = PyTuple_New(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 487, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_2);
   PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_2);
@@ -6431,24 +6375,24 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   __pyx_t_2 = 0;
   __pyx_t_4 = 0;
   __pyx_t_7 = 0;
-  __pyx_t_7 = __Pyx_PyObject_Call(__pyx_builtin_eval, __pyx_t_1, NULL); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 481, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_Call(__pyx_builtin_eval, __pyx_t_1, NULL); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 487, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (!(likely(PyString_CheckExact(__pyx_t_7))||((__pyx_t_7) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_7)->tp_name), 0))) __PYX_ERR(0, 481, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_t_7))||((__pyx_t_7) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_7)->tp_name), 0))) __PYX_ERR(0, 487, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_7);
   __Pyx_GOTREF(__pyx_v_self->order_model);
   __Pyx_DECREF(__pyx_v_self->order_model);
   __pyx_v_self->order_model = ((PyObject*)__pyx_t_7);
   __pyx_t_7 = 0;
 
-  /* "QAOrder.pyx":484
+  /* "QAOrder.pyx":490
  *             'ORDER_MODEL.{}'.format(otgOrder.get('price_type'))
  *         )
  *         self.time_condition = otgOrder.get('time_condition')             # <<<<<<<<<<<<<<
  *         if otgOrder.get('insert_date_time') == 0:
  *             self.datetime = 0
  */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 484, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 490, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_4 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_1))) {
@@ -6462,20 +6406,24 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_7 = (__pyx_t_4) ? __Pyx_PyObject_Call2Args(__pyx_t_1, __pyx_t_4, __pyx_n_s_time_condition) : __Pyx_PyObject_CallOneArg(__pyx_t_1, __pyx_n_s_time_condition);
   __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 484, __pyx_L1_error)
+  if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 490, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_time_condition, __pyx_t_7) < 0) __PYX_ERR(0, 484, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  if (!(likely(PyString_CheckExact(__pyx_t_7))||((__pyx_t_7) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_7)->tp_name), 0))) __PYX_ERR(0, 490, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_7);
+  __Pyx_GOTREF(__pyx_v_self->time_condition);
+  __Pyx_DECREF(__pyx_v_self->time_condition);
+  __pyx_v_self->time_condition = ((PyObject*)__pyx_t_7);
+  __pyx_t_7 = 0;
 
-  /* "QAOrder.pyx":485
+  /* "QAOrder.pyx":491
  *         )
  *         self.time_condition = otgOrder.get('time_condition')
  *         if otgOrder.get('insert_date_time') == 0:             # <<<<<<<<<<<<<<
  *             self.datetime = 0
  *         else:
  */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 485, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 491, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_4 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_1))) {
@@ -6489,24 +6437,24 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_7 = (__pyx_t_4) ? __Pyx_PyObject_Call2Args(__pyx_t_1, __pyx_t_4, __pyx_n_s_insert_date_time) : __Pyx_PyObject_CallOneArg(__pyx_t_1, __pyx_n_s_insert_date_time);
   __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 485, __pyx_L1_error)
+  if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 491, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyInt_EqObjC(__pyx_t_7, __pyx_int_0, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 485, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_EqObjC(__pyx_t_7, __pyx_int_0, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 491, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  __pyx_t_9 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_9 < 0)) __PYX_ERR(0, 485, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_9 < 0)) __PYX_ERR(0, 491, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   if (__pyx_t_9) {
 
-    /* "QAOrder.pyx":486
+    /* "QAOrder.pyx":492
  *         self.time_condition = otgOrder.get('time_condition')
  *         if otgOrder.get('insert_date_time') == 0:
  *             self.datetime = 0             # <<<<<<<<<<<<<<
  *         else:
  *             self.datetime = QA_util_stamp2datetime(
  */
-    if (!(likely(PyString_CheckExact(__pyx_int_0))||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_int_0)->tp_name), 0))) __PYX_ERR(0, 486, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_int_0))||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_int_0)->tp_name), 0))) __PYX_ERR(0, 492, __pyx_L1_error)
     __pyx_t_1 = __pyx_int_0;
     __Pyx_INCREF(__pyx_t_1);
     __Pyx_GIVEREF(__pyx_t_1);
@@ -6515,7 +6463,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
     __pyx_v_self->datetime = ((PyObject*)__pyx_t_1);
     __pyx_t_1 = 0;
 
-    /* "QAOrder.pyx":485
+    /* "QAOrder.pyx":491
  *         )
  *         self.time_condition = otgOrder.get('time_condition')
  *         if otgOrder.get('insert_date_time') == 0:             # <<<<<<<<<<<<<<
@@ -6525,7 +6473,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
     goto __pyx_L3;
   }
 
-  /* "QAOrder.pyx":488
+  /* "QAOrder.pyx":494
  *             self.datetime = 0
  *         else:
  *             self.datetime = QA_util_stamp2datetime(             # <<<<<<<<<<<<<<
@@ -6533,17 +6481,17 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
  *             )
  */
   /*else*/ {
-    __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_n_s_QA_util_stamp2datetime); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 488, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_n_s_QA_util_stamp2datetime); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 494, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
 
-    /* "QAOrder.pyx":489
+    /* "QAOrder.pyx":495
  *         else:
  *             self.datetime = QA_util_stamp2datetime(
  *                 int(otgOrder.get('insert_date_time'))             # <<<<<<<<<<<<<<
  *             )
  *         self.sending_time = self.datetime
  */
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 489, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 495, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __pyx_t_3 = NULL;
     if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -6557,10 +6505,10 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
     }
     __pyx_t_4 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_3, __pyx_n_s_insert_date_time) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_n_s_insert_date_time);
     __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 489, __pyx_L1_error)
+    if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 495, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_2 = __Pyx_PyNumber_Int(__pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 489, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyNumber_Int(__pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 495, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __pyx_t_4 = NULL;
@@ -6576,18 +6524,18 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
     __pyx_t_1 = (__pyx_t_4) ? __Pyx_PyObject_Call2Args(__pyx_t_7, __pyx_t_4, __pyx_t_2) : __Pyx_PyObject_CallOneArg(__pyx_t_7, __pyx_t_2);
     __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 488, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 494, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
-    /* "QAOrder.pyx":488
+    /* "QAOrder.pyx":494
  *             self.datetime = 0
  *         else:
  *             self.datetime = QA_util_stamp2datetime(             # <<<<<<<<<<<<<<
  *                 int(otgOrder.get('insert_date_time'))
  *             )
  */
-    if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 488, __pyx_L1_error)
+    if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 494, __pyx_L1_error)
     __Pyx_GIVEREF(__pyx_t_1);
     __Pyx_GOTREF(__pyx_v_self->datetime);
     __Pyx_DECREF(__pyx_v_self->datetime);
@@ -6596,7 +6544,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_L3:;
 
-  /* "QAOrder.pyx":491
+  /* "QAOrder.pyx":497
  *                 int(otgOrder.get('insert_date_time'))
  *             )
  *         self.sending_time = self.datetime             # <<<<<<<<<<<<<<
@@ -6611,14 +6559,14 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   __pyx_v_self->sending_time = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":492
+  /* "QAOrder.pyx":498
  *             )
  *         self.sending_time = self.datetime
  *         self.volume_condition = otgOrder.get('volume_condition')             # <<<<<<<<<<<<<<
  *         self.message = otgOrder.get('last_msg')
  * 
  */
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 492, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 498, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __pyx_t_2 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_7))) {
@@ -6632,128 +6580,18 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   }
   __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_7, __pyx_t_2, __pyx_n_s_volume_condition) : __Pyx_PyObject_CallOneArg(__pyx_t_7, __pyx_n_s_volume_condition);
   __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 492, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 498, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_volume_condition, __pyx_t_1) < 0) __PYX_ERR(0, 492, __pyx_L1_error)
+  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_volume_condition, __pyx_t_1) < 0) __PYX_ERR(0, 498, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":493
+  /* "QAOrder.pyx":499
  *         self.sending_time = self.datetime
  *         self.volume_condition = otgOrder.get('volume_condition')
  *         self.message = otgOrder.get('last_msg')             # <<<<<<<<<<<<<<
  * 
  *         self._status = ORDER_STATUS.NEW
- */
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 493, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_2 = NULL;
-  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_7))) {
-    __pyx_t_2 = PyMethod_GET_SELF(__pyx_t_7);
-    if (likely(__pyx_t_2)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_7);
-      __Pyx_INCREF(__pyx_t_2);
-      __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_7, function);
-    }
-  }
-  __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_7, __pyx_t_2, __pyx_n_s_last_msg) : __Pyx_PyObject_CallOneArg(__pyx_t_7, __pyx_n_s_last_msg);
-  __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 493, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_message, __pyx_t_1) < 0) __PYX_ERR(0, 493, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-
-  /* "QAOrder.pyx":495
- *         self.message = otgOrder.get('last_msg')
- * 
- *         self._status = ORDER_STATUS.NEW             # <<<<<<<<<<<<<<
- *         if '' in self.message or '' in self.message or '' in self.message:
- *             # :  /
- */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 495, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_NEW); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 495, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_7);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (!(likely(PyString_CheckExact(__pyx_t_7))||((__pyx_t_7) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_7)->tp_name), 0))) __PYX_ERR(0, 495, __pyx_L1_error)
-  __Pyx_GIVEREF(__pyx_t_7);
-  __Pyx_GOTREF(__pyx_v_self->_status);
-  __Pyx_DECREF(__pyx_v_self->_status);
-  __pyx_v_self->_status = ((PyObject*)__pyx_t_7);
-  __pyx_t_7 = 0;
-
-  /* "QAOrder.pyx":496
- * 
- *         self._status = ORDER_STATUS.NEW
- *         if '' in self.message or '' in self.message or '' in self.message:             # <<<<<<<<<<<<<<
- *             # :  /
- *             self._status = ORDER_STATUS.FAILED
- */
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_message); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 496, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_10 = (__Pyx_PySequence_ContainsTF(__pyx_kp_s__4, __pyx_t_7, Py_EQ)); if (unlikely(__pyx_t_10 < 0)) __PYX_ERR(0, 496, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  __pyx_t_11 = (__pyx_t_10 != 0);
-  if (!__pyx_t_11) {
-  } else {
-    __pyx_t_9 = __pyx_t_11;
-    goto __pyx_L5_bool_binop_done;
-  }
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_message); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 496, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_11 = (__Pyx_PySequence_ContainsTF(__pyx_kp_s__5, __pyx_t_7, Py_EQ)); if (unlikely(__pyx_t_11 < 0)) __PYX_ERR(0, 496, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  __pyx_t_10 = (__pyx_t_11 != 0);
-  if (!__pyx_t_10) {
-  } else {
-    __pyx_t_9 = __pyx_t_10;
-    goto __pyx_L5_bool_binop_done;
-  }
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_message); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 496, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_10 = (__Pyx_PySequence_ContainsTF(__pyx_kp_s__6, __pyx_t_7, Py_EQ)); if (unlikely(__pyx_t_10 < 0)) __PYX_ERR(0, 496, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  __pyx_t_11 = (__pyx_t_10 != 0);
-  __pyx_t_9 = __pyx_t_11;
-  __pyx_L5_bool_binop_done:;
-  if (__pyx_t_9) {
-
-    /* "QAOrder.pyx":498
- *         if '' in self.message or '' in self.message or '' in self.message:
- *             # :  /
- *             self._status = ORDER_STATUS.FAILED             # <<<<<<<<<<<<<<
- *         self.realorder_id = otgOrder.get('exchange_order_id')
- *         return self
- */
-    __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 498, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_FAILED); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 498, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 498, __pyx_L1_error)
-    __Pyx_GIVEREF(__pyx_t_1);
-    __Pyx_GOTREF(__pyx_v_self->_status);
-    __Pyx_DECREF(__pyx_v_self->_status);
-    __pyx_v_self->_status = ((PyObject*)__pyx_t_1);
-    __pyx_t_1 = 0;
-
-    /* "QAOrder.pyx":496
- * 
- *         self._status = ORDER_STATUS.NEW
- *         if '' in self.message or '' in self.message or '' in self.message:             # <<<<<<<<<<<<<<
- *             # :  /
- *             self._status = ORDER_STATUS.FAILED
- */
-  }
-
-  /* "QAOrder.pyx":499
- *             # :  /
- *             self._status = ORDER_STATUS.FAILED
- *         self.realorder_id = otgOrder.get('exchange_order_id')             # <<<<<<<<<<<<<<
- *         return self
- * 
  */
   __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 499, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
@@ -6767,15 +6605,129 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
       __Pyx_DECREF_SET(__pyx_t_7, function);
     }
   }
-  __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_7, __pyx_t_2, __pyx_n_s_exchange_order_id) : __Pyx_PyObject_CallOneArg(__pyx_t_7, __pyx_n_s_exchange_order_id);
+  __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_7, __pyx_t_2, __pyx_n_s_last_msg) : __Pyx_PyObject_CallOneArg(__pyx_t_7, __pyx_n_s_last_msg);
   __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
   if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 499, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_realorder_id, __pyx_t_1) < 0) __PYX_ERR(0, 499, __pyx_L1_error)
+  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_message, __pyx_t_1) < 0) __PYX_ERR(0, 499, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":500
+  /* "QAOrder.pyx":501
+ *         self.message = otgOrder.get('last_msg')
+ * 
+ *         self._status = ORDER_STATUS.NEW             # <<<<<<<<<<<<<<
+ *         if '' in self.message or '' in self.message or '' in self.message:
+ *             # :  /
+ */
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 501, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_NEW); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 501, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  if (!(likely(PyString_CheckExact(__pyx_t_7))||((__pyx_t_7) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_7)->tp_name), 0))) __PYX_ERR(0, 501, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_7);
+  __Pyx_GOTREF(__pyx_v_self->_status);
+  __Pyx_DECREF(__pyx_v_self->_status);
+  __pyx_v_self->_status = ((PyObject*)__pyx_t_7);
+  __pyx_t_7 = 0;
+
+  /* "QAOrder.pyx":502
+ * 
+ *         self._status = ORDER_STATUS.NEW
+ *         if '' in self.message or '' in self.message or '' in self.message:             # <<<<<<<<<<<<<<
+ *             # :  /
+ *             self._status = ORDER_STATUS.FAILED
+ */
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_message); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 502, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_10 = (__Pyx_PySequence_ContainsTF(__pyx_kp_s__4, __pyx_t_7, Py_EQ)); if (unlikely(__pyx_t_10 < 0)) __PYX_ERR(0, 502, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_11 = (__pyx_t_10 != 0);
+  if (!__pyx_t_11) {
+  } else {
+    __pyx_t_9 = __pyx_t_11;
+    goto __pyx_L5_bool_binop_done;
+  }
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_message); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 502, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_11 = (__Pyx_PySequence_ContainsTF(__pyx_kp_s__5, __pyx_t_7, Py_EQ)); if (unlikely(__pyx_t_11 < 0)) __PYX_ERR(0, 502, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_10 = (__pyx_t_11 != 0);
+  if (!__pyx_t_10) {
+  } else {
+    __pyx_t_9 = __pyx_t_10;
+    goto __pyx_L5_bool_binop_done;
+  }
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_message); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 502, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_10 = (__Pyx_PySequence_ContainsTF(__pyx_kp_s__6, __pyx_t_7, Py_EQ)); if (unlikely(__pyx_t_10 < 0)) __PYX_ERR(0, 502, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_11 = (__pyx_t_10 != 0);
+  __pyx_t_9 = __pyx_t_11;
+  __pyx_L5_bool_binop_done:;
+  if (__pyx_t_9) {
+
+    /* "QAOrder.pyx":504
+ *         if '' in self.message or '' in self.message or '' in self.message:
+ *             # :  /
+ *             self._status = ORDER_STATUS.FAILED             # <<<<<<<<<<<<<<
+ *         self.realorder_id = otgOrder.get('exchange_order_id')
+ *         return self
+ */
+    __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 504, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_FAILED); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 504, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+    if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 504, __pyx_L1_error)
+    __Pyx_GIVEREF(__pyx_t_1);
+    __Pyx_GOTREF(__pyx_v_self->_status);
+    __Pyx_DECREF(__pyx_v_self->_status);
+    __pyx_v_self->_status = ((PyObject*)__pyx_t_1);
+    __pyx_t_1 = 0;
+
+    /* "QAOrder.pyx":502
+ * 
+ *         self._status = ORDER_STATUS.NEW
+ *         if '' in self.message or '' in self.message or '' in self.message:             # <<<<<<<<<<<<<<
+ *             # :  /
+ *             self._status = ORDER_STATUS.FAILED
+ */
+  }
+
+  /* "QAOrder.pyx":505
+ *             # :  /
+ *             self._status = ORDER_STATUS.FAILED
+ *         self.realorder_id = otgOrder.get('exchange_order_id')             # <<<<<<<<<<<<<<
+ *         return self
+ * 
+ */
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_v_otgOrder, __pyx_n_s_get); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 505, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_2 = NULL;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_7))) {
+    __pyx_t_2 = PyMethod_GET_SELF(__pyx_t_7);
+    if (likely(__pyx_t_2)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_7);
+      __Pyx_INCREF(__pyx_t_2);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_7, function);
+    }
+  }
+  __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_7, __pyx_t_2, __pyx_n_s_exchange_order_id) : __Pyx_PyObject_CallOneArg(__pyx_t_7, __pyx_n_s_exchange_order_id);
+  __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 505, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 505, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF(__pyx_v_self->realorder_id);
+  __Pyx_DECREF(__pyx_v_self->realorder_id);
+  __pyx_v_self->realorder_id = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* "QAOrder.pyx":506
  *             self._status = ORDER_STATUS.FAILED
  *         self.realorder_id = otgOrder.get('exchange_order_id')
  *         return self             # <<<<<<<<<<<<<<
@@ -6787,7 +6739,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   __pyx_r = ((PyObject *)__pyx_v_self);
   goto __pyx_L0;
 
-  /* "QAOrder.pyx":443
+  /* "QAOrder.pyx":449
  *         }
  * 
  *     def from_otgformat(self, otgOrder):             # <<<<<<<<<<<<<<
@@ -6811,7 +6763,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_32from_otgformat(struct __pyx_obj_7
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":502
+/* "QAOrder.pyx":508
  *         return self
  * 
  *     def from_dict(self, order_dict):             # <<<<<<<<<<<<<<
@@ -6852,7 +6804,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_34from_dict(struct __pyx_obj_7QAOrd
   PyObject *__pyx_t_13 = NULL;
   __Pyx_RefNannySetupContext("from_dict", 0);
 
-  /* "QAOrder.pyx":508
+  /* "QAOrder.pyx":514
  *         :return: self QA_Order
  *         '''
  *         try:             # <<<<<<<<<<<<<<
@@ -6868,301 +6820,293 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_34from_dict(struct __pyx_obj_7QAOrd
     __Pyx_XGOTREF(__pyx_t_3);
     /*try:*/ {
 
-      /* "QAOrder.pyx":511
+      /* "QAOrder.pyx":517
  *             # QA_util_log_info('QA_ORDER CHANGE: from {} change to {}'.format(
  *             #     self.order_id, order['order_id']))
  *             self.price = order_dict['price']             # <<<<<<<<<<<<<<
  *             self.date = order_dict['date']
  *             self.datetime = order_dict['datetime']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 511, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 517, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_5 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_5 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 511, __pyx_L3_error)
+      __pyx_t_5 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_5 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 517, __pyx_L3_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       __pyx_v_self->price = __pyx_t_5;
 
-      /* "QAOrder.pyx":512
+      /* "QAOrder.pyx":518
  *             #     self.order_id, order['order_id']))
  *             self.price = order_dict['price']
  *             self.date = order_dict['date']             # <<<<<<<<<<<<<<
  *             self.datetime = order_dict['datetime']
  *             self.sending_time = order_dict['sending_time'] #
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_date); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 512, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_date); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 518, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 512, __pyx_L3_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 518, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->date);
       __Pyx_DECREF(__pyx_v_self->date);
       __pyx_v_self->date = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":513
+      /* "QAOrder.pyx":519
  *             self.price = order_dict['price']
  *             self.date = order_dict['date']
  *             self.datetime = order_dict['datetime']             # <<<<<<<<<<<<<<
  *             self.sending_time = order_dict['sending_time'] #
  *             self.trade_time = order_dict['trade_time']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_datetime); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 513, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_datetime); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 519, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 513, __pyx_L3_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 519, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->datetime);
       __Pyx_DECREF(__pyx_v_self->datetime);
       __pyx_v_self->datetime = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":514
+      /* "QAOrder.pyx":520
  *             self.date = order_dict['date']
  *             self.datetime = order_dict['datetime']
  *             self.sending_time = order_dict['sending_time'] #             # <<<<<<<<<<<<<<
  *             self.trade_time = order_dict['trade_time']
  *             self.amount = order_dict['amount']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_sending_time); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 514, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_sending_time); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 520, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 514, __pyx_L3_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 520, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->sending_time);
       __Pyx_DECREF(__pyx_v_self->sending_time);
       __pyx_v_self->sending_time = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":515
+      /* "QAOrder.pyx":521
  *             self.datetime = order_dict['datetime']
  *             self.sending_time = order_dict['sending_time'] #
  *             self.trade_time = order_dict['trade_time']             # <<<<<<<<<<<<<<
  *             self.amount = order_dict['amount']
  *             self.frequence = order_dict['frequence']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_trade_time); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 515, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_trade_time); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 521, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyList_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 515, __pyx_L3_error)
+      if (!(likely(PyList_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 521, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->trade_time);
       __Pyx_DECREF(__pyx_v_self->trade_time);
       __pyx_v_self->trade_time = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":516
+      /* "QAOrder.pyx":522
  *             self.sending_time = order_dict['sending_time'] #
  *             self.trade_time = order_dict['trade_time']
  *             self.amount = order_dict['amount']             # <<<<<<<<<<<<<<
  *             self.frequence = order_dict['frequence']
  *             self.market_type = order_dict['market_type']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 516, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 522, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_5 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_5 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 516, __pyx_L3_error)
+      __pyx_t_5 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_5 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 522, __pyx_L3_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       __pyx_v_self->amount = __pyx_t_5;
 
-      /* "QAOrder.pyx":517
+      /* "QAOrder.pyx":523
  *             self.trade_time = order_dict['trade_time']
  *             self.amount = order_dict['amount']
  *             self.frequence = order_dict['frequence']             # <<<<<<<<<<<<<<
  *             self.market_type = order_dict['market_type']
  *             self.towards = order_dict['towards']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_frequence); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 517, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_frequence); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 523, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 517, __pyx_L3_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 523, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->frequence);
       __Pyx_DECREF(__pyx_v_self->frequence);
       __pyx_v_self->frequence = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":518
+      /* "QAOrder.pyx":524
  *             self.amount = order_dict['amount']
  *             self.frequence = order_dict['frequence']
  *             self.market_type = order_dict['market_type']             # <<<<<<<<<<<<<<
  *             self.towards = order_dict['towards']
  *             self.code = order_dict['code']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_market_type); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 518, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_market_type); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 524, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 518, __pyx_L3_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 524, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->market_type);
       __Pyx_DECREF(__pyx_v_self->market_type);
       __pyx_v_self->market_type = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":519
+      /* "QAOrder.pyx":525
  *             self.frequence = order_dict['frequence']
  *             self.market_type = order_dict['market_type']
  *             self.towards = order_dict['towards']             # <<<<<<<<<<<<<<
  *             self.code = order_dict['code']
- *             self.user = order_dict['user']
+ *             self.user_cookie = order_dict['user_cookie']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_towards); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 519, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_towards); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 525, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_4); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 519, __pyx_L3_error)
+      __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_4); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 525, __pyx_L3_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       __pyx_v_self->towards = __pyx_t_6;
 
-      /* "QAOrder.pyx":520
+      /* "QAOrder.pyx":526
  *             self.market_type = order_dict['market_type']
  *             self.towards = order_dict['towards']
  *             self.code = order_dict['code']             # <<<<<<<<<<<<<<
- *             self.user = order_dict['user']
+ *             self.user_cookie = order_dict['user_cookie']
  *             self.account_cookie = order_dict['account_cookie']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_code); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 520, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_code); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 526, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 520, __pyx_L3_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 526, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->code);
       __Pyx_DECREF(__pyx_v_self->code);
       __pyx_v_self->code = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":521
+      /* "QAOrder.pyx":527
  *             self.towards = order_dict['towards']
  *             self.code = order_dict['code']
- *             self.user = order_dict['user']             # <<<<<<<<<<<<<<
+ *             self.user_cookie = order_dict['user_cookie']             # <<<<<<<<<<<<<<
  *             self.account_cookie = order_dict['account_cookie']
  *             self.strategy = order_dict['strategy']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_user); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 521, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_user_cookie); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 527, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 521, __pyx_L3_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 527, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
-      __Pyx_GOTREF(__pyx_v_self->user);
-      __Pyx_DECREF(__pyx_v_self->user);
-      __pyx_v_self->user = ((PyObject*)__pyx_t_4);
+      __Pyx_GOTREF(__pyx_v_self->user_cookie);
+      __Pyx_DECREF(__pyx_v_self->user_cookie);
+      __pyx_v_self->user_cookie = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":522
+      /* "QAOrder.pyx":528
  *             self.code = order_dict['code']
- *             self.user = order_dict['user']
+ *             self.user_cookie = order_dict['user_cookie']
  *             self.account_cookie = order_dict['account_cookie']             # <<<<<<<<<<<<<<
  *             self.strategy = order_dict['strategy']
- *             self.type = order_dict['type']
+ *             self.order_model = order_dict['order_model']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_account_cookie); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 522, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_account_cookie); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 528, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 522, __pyx_L3_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 528, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->account_cookie);
       __Pyx_DECREF(__pyx_v_self->account_cookie);
       __pyx_v_self->account_cookie = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":523
- *             self.user = order_dict['user']
+      /* "QAOrder.pyx":529
+ *             self.user_cookie = order_dict['user_cookie']
  *             self.account_cookie = order_dict['account_cookie']
  *             self.strategy = order_dict['strategy']             # <<<<<<<<<<<<<<
- *             self.type = order_dict['type']
  *             self.order_model = order_dict['order_model']
+ *             self.amount_model = order_dict['amount_model']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_strategy); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 523, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_strategy); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 529, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 523, __pyx_L3_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 529, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->strategy);
       __Pyx_DECREF(__pyx_v_self->strategy);
       __pyx_v_self->strategy = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":524
+      /* "QAOrder.pyx":530
  *             self.account_cookie = order_dict['account_cookie']
  *             self.strategy = order_dict['strategy']
- *             self.type = order_dict['type']             # <<<<<<<<<<<<<<
- *             self.order_model = order_dict['order_model']
- *             self.amount_model = order_dict['amount_model']
- */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_type); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 524, __pyx_L3_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_type, __pyx_t_4) < 0) __PYX_ERR(0, 524, __pyx_L3_error)
-      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-
-      /* "QAOrder.pyx":525
- *             self.strategy = order_dict['strategy']
- *             self.type = order_dict['type']
  *             self.order_model = order_dict['order_model']             # <<<<<<<<<<<<<<
  *             self.amount_model = order_dict['amount_model']
  *             self.order_id = order_dict['order_id']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_order_model); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 525, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_order_model); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 530, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 525, __pyx_L3_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 530, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->order_model);
       __Pyx_DECREF(__pyx_v_self->order_model);
       __pyx_v_self->order_model = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":526
- *             self.type = order_dict['type']
+      /* "QAOrder.pyx":531
+ *             self.strategy = order_dict['strategy']
  *             self.order_model = order_dict['order_model']
  *             self.amount_model = order_dict['amount_model']             # <<<<<<<<<<<<<<
  *             self.order_id = order_dict['order_id']
  *             self.realorder_id = order_dict['realorder_id']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_amount_model); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 526, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_amount_model); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 531, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 526, __pyx_L3_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 531, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->amount_model);
       __Pyx_DECREF(__pyx_v_self->amount_model);
       __pyx_v_self->amount_model = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":527
+      /* "QAOrder.pyx":532
  *             self.order_model = order_dict['order_model']
  *             self.amount_model = order_dict['amount_model']
  *             self.order_id = order_dict['order_id']             # <<<<<<<<<<<<<<
  *             self.realorder_id = order_dict['realorder_id']
  *             self.trade_id = order_dict['trade_id']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_order_id); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 527, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_order_id); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 532, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 527, __pyx_L3_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 532, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->order_id);
       __Pyx_DECREF(__pyx_v_self->order_id);
       __pyx_v_self->order_id = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":528
+      /* "QAOrder.pyx":533
  *             self.amount_model = order_dict['amount_model']
  *             self.order_id = order_dict['order_id']
  *             self.realorder_id = order_dict['realorder_id']             # <<<<<<<<<<<<<<
  *             self.trade_id = order_dict['trade_id']
  *             self.callback = order_dict['callback']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_realorder_id); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 528, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_realorder_id); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 533, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_realorder_id, __pyx_t_4) < 0) __PYX_ERR(0, 528, __pyx_L3_error)
-      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 533, __pyx_L3_error)
+      __Pyx_GIVEREF(__pyx_t_4);
+      __Pyx_GOTREF(__pyx_v_self->realorder_id);
+      __Pyx_DECREF(__pyx_v_self->realorder_id);
+      __pyx_v_self->realorder_id = ((PyObject*)__pyx_t_4);
+      __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":529
+      /* "QAOrder.pyx":534
  *             self.order_id = order_dict['order_id']
  *             self.realorder_id = order_dict['realorder_id']
  *             self.trade_id = order_dict['trade_id']             # <<<<<<<<<<<<<<
  *             self.callback = order_dict['callback']
  *             self.commission_coeff = order_dict['commission_coeff']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_trade_id); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 529, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_trade_id); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 534, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyList_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 529, __pyx_L3_error)
+      if (!(likely(PyList_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 534, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->trade_id);
       __Pyx_DECREF(__pyx_v_self->trade_id);
       __pyx_v_self->trade_id = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":530
+      /* "QAOrder.pyx":535
  *             self.realorder_id = order_dict['realorder_id']
  *             self.trade_id = order_dict['trade_id']
  *             self.callback = order_dict['callback']             # <<<<<<<<<<<<<<
  *             self.commission_coeff = order_dict['commission_coeff']
  *             self.tax_coeff = order_dict['tax_coeff']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_callback); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 530, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_callback); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 535, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->callback);
@@ -7170,110 +7114,117 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_34from_dict(struct __pyx_obj_7QAOrd
       __pyx_v_self->callback = __pyx_t_4;
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":531
+      /* "QAOrder.pyx":536
  *             self.trade_id = order_dict['trade_id']
  *             self.callback = order_dict['callback']
  *             self.commission_coeff = order_dict['commission_coeff']             # <<<<<<<<<<<<<<
  *             self.tax_coeff = order_dict['tax_coeff']
  * 
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_commission_coeff); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 531, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_commission_coeff); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 536, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_5 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_5 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 531, __pyx_L3_error)
+      __pyx_t_5 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_5 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 536, __pyx_L3_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       __pyx_v_self->commission_coeff = __pyx_t_5;
 
-      /* "QAOrder.pyx":532
+      /* "QAOrder.pyx":537
  *             self.callback = order_dict['callback']
  *             self.commission_coeff = order_dict['commission_coeff']
  *             self.tax_coeff = order_dict['tax_coeff']             # <<<<<<<<<<<<<<
  * 
  *             self.money = order_dict['money']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_tax_coeff); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 532, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_tax_coeff); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 537, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_5 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_5 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 532, __pyx_L3_error)
+      __pyx_t_5 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_5 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 537, __pyx_L3_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       __pyx_v_self->tax_coeff = __pyx_t_5;
 
-      /* "QAOrder.pyx":534
+      /* "QAOrder.pyx":539
  *             self.tax_coeff = order_dict['tax_coeff']
  * 
  *             self.money = order_dict['money']             # <<<<<<<<<<<<<<
  *             self._status = order_dict['_status']
  * 
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_money); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 534, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_money); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 539, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_5 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_5 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 534, __pyx_L3_error)
+      __pyx_t_5 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_5 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 539, __pyx_L3_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       __pyx_v_self->money = __pyx_t_5;
 
-      /* "QAOrder.pyx":535
+      /* "QAOrder.pyx":540
  * 
  *             self.money = order_dict['money']
  *             self._status = order_dict['_status']             # <<<<<<<<<<<<<<
  * 
  *             self.cancel_amount = order_dict['cancel_amount']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_status); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 535, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_status); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 540, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 535, __pyx_L3_error)
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 540, __pyx_L3_error)
       __Pyx_GIVEREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_v_self->_status);
       __Pyx_DECREF(__pyx_v_self->_status);
       __pyx_v_self->_status = ((PyObject*)__pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":537
+      /* "QAOrder.pyx":542
  *             self._status = order_dict['_status']
  * 
  *             self.cancel_amount = order_dict['cancel_amount']             # <<<<<<<<<<<<<<
  *             self.trade_amount = order_dict['trade_amount']
  *             self.trade_price = order_dict['trade_price']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_cancel_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 537, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_cancel_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 542, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_cancel_amount, __pyx_t_4) < 0) __PYX_ERR(0, 537, __pyx_L3_error)
+      __pyx_t_5 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_5 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 542, __pyx_L3_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      __pyx_v_self->cancel_amount = __pyx_t_5;
 
-      /* "QAOrder.pyx":538
+      /* "QAOrder.pyx":543
  * 
  *             self.cancel_amount = order_dict['cancel_amount']
  *             self.trade_amount = order_dict['trade_amount']             # <<<<<<<<<<<<<<
  *             self.trade_price = order_dict['trade_price']
  *             self.reason = order_dict['reason']
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_trade_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 538, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_trade_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 543, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_amount, __pyx_t_4) < 0) __PYX_ERR(0, 538, __pyx_L3_error)
+      __pyx_t_5 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_5 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 543, __pyx_L3_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      __pyx_v_self->trade_amount = __pyx_t_5;
 
-      /* "QAOrder.pyx":539
+      /* "QAOrder.pyx":544
  *             self.cancel_amount = order_dict['cancel_amount']
  *             self.trade_amount = order_dict['trade_amount']
  *             self.trade_price = order_dict['trade_price']             # <<<<<<<<<<<<<<
  *             self.reason = order_dict['reason']
  * 
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_trade_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 539, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_trade_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 544, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_trade_price, __pyx_t_4) < 0) __PYX_ERR(0, 539, __pyx_L3_error)
+      __pyx_t_5 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_5 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 544, __pyx_L3_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      __pyx_v_self->trade_price = __pyx_t_5;
 
-      /* "QAOrder.pyx":540
+      /* "QAOrder.pyx":545
  *             self.trade_amount = order_dict['trade_amount']
  *             self.trade_price = order_dict['trade_price']
  *             self.reason = order_dict['reason']             # <<<<<<<<<<<<<<
  * 
  *             return self
  */
-      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_reason); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 540, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_Dict_GetItem(__pyx_v_order_dict, __pyx_n_s_reason); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 545, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_reason, __pyx_t_4) < 0) __PYX_ERR(0, 540, __pyx_L3_error)
-      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      if (!(likely(PyString_CheckExact(__pyx_t_4))||((__pyx_t_4) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_4)->tp_name), 0))) __PYX_ERR(0, 545, __pyx_L3_error)
+      __Pyx_GIVEREF(__pyx_t_4);
+      __Pyx_GOTREF(__pyx_v_self->reason);
+      __Pyx_DECREF(__pyx_v_self->reason);
+      __pyx_v_self->reason = ((PyObject*)__pyx_t_4);
+      __pyx_t_4 = 0;
 
-      /* "QAOrder.pyx":542
+      /* "QAOrder.pyx":547
  *             self.reason = order_dict['reason']
  * 
  *             return self             # <<<<<<<<<<<<<<
@@ -7285,7 +7236,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_34from_dict(struct __pyx_obj_7QAOrd
       __pyx_r = ((PyObject *)__pyx_v_self);
       goto __pyx_L7_try_return;
 
-      /* "QAOrder.pyx":508
+      /* "QAOrder.pyx":514
  *         :return: self QA_Order
  *         '''
  *         try:             # <<<<<<<<<<<<<<
@@ -7296,7 +7247,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_34from_dict(struct __pyx_obj_7QAOrd
     __pyx_L3_error:;
     __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-    /* "QAOrder.pyx":543
+    /* "QAOrder.pyx":548
  * 
  *             return self
  *         except Exception as e:             # <<<<<<<<<<<<<<
@@ -7306,23 +7257,23 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_34from_dict(struct __pyx_obj_7QAOrd
     __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_6) {
       __Pyx_AddTraceback("QAOrder.QA_Order.from_dict", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(0, 543, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(0, 548, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_t_7);
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_INCREF(__pyx_t_7);
       __pyx_v_e = __pyx_t_7;
 
-      /* "QAOrder.pyx":544
+      /* "QAOrder.pyx":549
  *             return self
  *         except Exception as e:
  *             QA_util_log_info('Failed to tran from dict {}'.format(e))             # <<<<<<<<<<<<<<
  * 
  * 
  */
-      __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_QA_util_log_info); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 544, __pyx_L5_except_error)
+      __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_QA_util_log_info); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 549, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_10);
-      __pyx_t_12 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_Failed_to_tran_from_dict, __pyx_n_s_format); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 544, __pyx_L5_except_error)
+      __pyx_t_12 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_Failed_to_tran_from_dict, __pyx_n_s_format); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 549, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_12);
       __pyx_t_13 = NULL;
       if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_12))) {
@@ -7336,7 +7287,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_34from_dict(struct __pyx_obj_7QAOrd
       }
       __pyx_t_11 = (__pyx_t_13) ? __Pyx_PyObject_Call2Args(__pyx_t_12, __pyx_t_13, __pyx_v_e) : __Pyx_PyObject_CallOneArg(__pyx_t_12, __pyx_v_e);
       __Pyx_XDECREF(__pyx_t_13); __pyx_t_13 = 0;
-      if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 544, __pyx_L5_except_error)
+      if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 549, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_11);
       __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
       __pyx_t_12 = NULL;
@@ -7352,7 +7303,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_34from_dict(struct __pyx_obj_7QAOrd
       __pyx_t_9 = (__pyx_t_12) ? __Pyx_PyObject_Call2Args(__pyx_t_10, __pyx_t_12, __pyx_t_11) : __Pyx_PyObject_CallOneArg(__pyx_t_10, __pyx_t_11);
       __Pyx_XDECREF(__pyx_t_12); __pyx_t_12 = 0;
       __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
-      if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 544, __pyx_L5_except_error)
+      if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 549, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_9);
       __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
@@ -7364,7 +7315,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_34from_dict(struct __pyx_obj_7QAOrd
     goto __pyx_L5_except_error;
     __pyx_L5_except_error:;
 
-    /* "QAOrder.pyx":508
+    /* "QAOrder.pyx":514
  *         :return: self QA_Order
  *         '''
  *         try:             # <<<<<<<<<<<<<<
@@ -7389,7 +7340,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_34from_dict(struct __pyx_obj_7QAOrd
     __Pyx_ExceptionReset(__pyx_t_1, __pyx_t_2, __pyx_t_3);
   }
 
-  /* "QAOrder.pyx":502
+  /* "QAOrder.pyx":508
  *         return self
  * 
  *     def from_dict(self, order_dict):             # <<<<<<<<<<<<<<
@@ -8205,7 +8156,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_9frequence_4__del__(struct __pyx_obj_7QAO
  *     cdef public str frequence
  *     cdef public int towards             # <<<<<<<<<<<<<<
  *     cdef public str code
- *     cdef public str user
+ *     cdef public str user_cookie
  */
 
 /* Python wrapper */
@@ -8280,8 +8231,8 @@ static int __pyx_pf_7QAOrder_8QA_Order_7towards_2__set__(struct __pyx_obj_7QAOrd
  *     cdef public str frequence
  *     cdef public int towards
  *     cdef public str code             # <<<<<<<<<<<<<<
- *     cdef public str user
- *     cdef public str account_cookie
+ *     cdef public str user_cookie
+ *     cdef public float trade_amount
  */
 
 /* Python wrapper */
@@ -8384,31 +8335,31 @@ static int __pyx_pf_7QAOrder_8QA_Order_4code_4__del__(struct __pyx_obj_7QAOrder_
 /* "QAOrder.pyx":75
  *     cdef public int towards
  *     cdef public str code
- *     cdef public str user             # <<<<<<<<<<<<<<
- *     cdef public str account_cookie
- *     cdef public str strategy
+ *     cdef public str user_cookie             # <<<<<<<<<<<<<<
+ *     cdef public float trade_amount
+ *     cdef public float cancel_amount
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_7QAOrder_8QA_Order_4user_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_7QAOrder_8QA_Order_4user_1__get__(PyObject *__pyx_v_self) {
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_11user_cookie_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_11user_cookie_1__get__(PyObject *__pyx_v_self) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_4user___get__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_11user_cookie___get__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_7QAOrder_8QA_Order_4user___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_11user_cookie___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __Pyx_INCREF(__pyx_v_self->user);
-  __pyx_r = __pyx_v_self->user;
+  __Pyx_INCREF(__pyx_v_self->user_cookie);
+  __pyx_r = __pyx_v_self->user_cookie;
   goto __pyx_L0;
 
   /* function exit code */
@@ -8419,19 +8370,19 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_4user___get__(struct __pyx_obj_7QAO
 }
 
 /* Python wrapper */
-static int __pyx_pw_7QAOrder_8QA_Order_4user_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
-static int __pyx_pw_7QAOrder_8QA_Order_4user_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+static int __pyx_pw_7QAOrder_8QA_Order_11user_cookie_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_7QAOrder_8QA_Order_11user_cookie_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_4user_2__set__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_11user_cookie_2__set__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self), ((PyObject *)__pyx_v_value));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static int __pyx_pf_7QAOrder_8QA_Order_4user_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value) {
+static int __pyx_pf_7QAOrder_8QA_Order_11user_cookie_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value) {
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -8440,9 +8391,9 @@ static int __pyx_pf_7QAOrder_8QA_Order_4user_2__set__(struct __pyx_obj_7QAOrder_
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
-  __Pyx_GOTREF(__pyx_v_self->user);
-  __Pyx_DECREF(__pyx_v_self->user);
-  __pyx_v_self->user = ((PyObject*)__pyx_t_1);
+  __Pyx_GOTREF(__pyx_v_self->user_cookie);
+  __Pyx_DECREF(__pyx_v_self->user_cookie);
+  __pyx_v_self->user_cookie = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
   /* function exit code */
@@ -8450,7 +8401,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_4user_2__set__(struct __pyx_obj_7QAOrder_
   goto __pyx_L0;
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("QAOrder.QA_Order.user.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("QAOrder.QA_Order.user_cookie.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = -1;
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -8458,27 +8409,27 @@ static int __pyx_pf_7QAOrder_8QA_Order_4user_2__set__(struct __pyx_obj_7QAOrder_
 }
 
 /* Python wrapper */
-static int __pyx_pw_7QAOrder_8QA_Order_4user_5__del__(PyObject *__pyx_v_self); /*proto*/
-static int __pyx_pw_7QAOrder_8QA_Order_4user_5__del__(PyObject *__pyx_v_self) {
+static int __pyx_pw_7QAOrder_8QA_Order_11user_cookie_5__del__(PyObject *__pyx_v_self); /*proto*/
+static int __pyx_pw_7QAOrder_8QA_Order_11user_cookie_5__del__(PyObject *__pyx_v_self) {
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__del__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_4user_4__del__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_11user_cookie_4__del__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static int __pyx_pf_7QAOrder_8QA_Order_4user_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
+static int __pyx_pf_7QAOrder_8QA_Order_11user_cookie_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__del__", 0);
   __Pyx_INCREF(Py_None);
   __Pyx_GIVEREF(Py_None);
-  __Pyx_GOTREF(__pyx_v_self->user);
-  __Pyx_DECREF(__pyx_v_self->user);
-  __pyx_v_self->user = ((PyObject*)Py_None);
+  __Pyx_GOTREF(__pyx_v_self->user_cookie);
+  __Pyx_DECREF(__pyx_v_self->user_cookie);
+  __pyx_v_self->user_cookie = ((PyObject*)Py_None);
 
   /* function exit code */
   __pyx_r = 0;
@@ -8488,7 +8439,159 @@ static int __pyx_pf_7QAOrder_8QA_Order_4user_4__del__(struct __pyx_obj_7QAOrder_
 
 /* "QAOrder.pyx":76
  *     cdef public str code
- *     cdef public str user
+ *     cdef public str user_cookie
+ *     cdef public float trade_amount             # <<<<<<<<<<<<<<
+ *     cdef public float cancel_amount
+ *     cdef public str account_cookie
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_12trade_amount_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_12trade_amount_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_12trade_amount___get__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_12trade_amount___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->trade_amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 76, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("QAOrder.QA_Order.trade_amount.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_7QAOrder_8QA_Order_12trade_amount_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_7QAOrder_8QA_Order_12trade_amount_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_12trade_amount_2__set__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_7QAOrder_8QA_Order_12trade_amount_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  float __pyx_t_1;
+  __Pyx_RefNannySetupContext("__set__", 0);
+  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_value); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 76, __pyx_L1_error)
+  __pyx_v_self->trade_amount = __pyx_t_1;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_AddTraceback("QAOrder.QA_Order.trade_amount.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "QAOrder.pyx":77
+ *     cdef public str user_cookie
+ *     cdef public float trade_amount
+ *     cdef public float cancel_amount             # <<<<<<<<<<<<<<
+ *     cdef public str account_cookie
+ *     cdef public str strategy
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_13cancel_amount_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_13cancel_amount_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_13cancel_amount___get__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_13cancel_amount___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->cancel_amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 77, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("QAOrder.QA_Order.cancel_amount.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_7QAOrder_8QA_Order_13cancel_amount_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_7QAOrder_8QA_Order_13cancel_amount_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_13cancel_amount_2__set__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_7QAOrder_8QA_Order_13cancel_amount_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  float __pyx_t_1;
+  __Pyx_RefNannySetupContext("__set__", 0);
+  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_value); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 77, __pyx_L1_error)
+  __pyx_v_self->cancel_amount = __pyx_t_1;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_AddTraceback("QAOrder.QA_Order.cancel_amount.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "QAOrder.pyx":78
+ *     cdef public float trade_amount
+ *     cdef public float cancel_amount
  *     cdef public str account_cookie             # <<<<<<<<<<<<<<
  *     cdef public str strategy
  *     cdef public str order_model
@@ -8541,7 +8644,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_14account_cookie_2__set__(struct __pyx_ob
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__set__", 0);
-  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 76, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 78, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -8591,8 +8694,8 @@ static int __pyx_pf_7QAOrder_8QA_Order_14account_cookie_4__del__(struct __pyx_ob
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":77
- *     cdef public str user
+/* "QAOrder.pyx":79
+ *     cdef public float cancel_amount
  *     cdef public str account_cookie
  *     cdef public str strategy             # <<<<<<<<<<<<<<
  *     cdef public str order_model
@@ -8646,7 +8749,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_8strategy_2__set__(struct __pyx_obj_7QAOr
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__set__", 0);
-  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 77, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 79, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -8696,7 +8799,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_8strategy_4__del__(struct __pyx_obj_7QAOr
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":78
+/* "QAOrder.pyx":80
  *     cdef public str account_cookie
  *     cdef public str strategy
  *     cdef public str order_model             # <<<<<<<<<<<<<<
@@ -8751,7 +8854,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_11order_model_2__set__(struct __pyx_obj_7
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__set__", 0);
-  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 78, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 80, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -8801,7 +8904,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_11order_model_4__del__(struct __pyx_obj_7
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":79
+/* "QAOrder.pyx":81
  *     cdef public str strategy
  *     cdef public str order_model
  *     cdef public float money             # <<<<<<<<<<<<<<
@@ -8828,7 +8931,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_5money___get__(struct __pyx_obj_7QA
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->money); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 79, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->money); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 81, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -8863,7 +8966,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_5money_2__set__(struct __pyx_obj_7QAOrder
   __Pyx_RefNannyDeclarations
   float __pyx_t_1;
   __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_value); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 79, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_value); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 81, __pyx_L1_error)
   __pyx_v_self->money = __pyx_t_1;
 
   /* function exit code */
@@ -8877,7 +8980,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_5money_2__set__(struct __pyx_obj_7QAOrder
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":80
+/* "QAOrder.pyx":82
  *     cdef public str order_model
  *     cdef public float money
  *     cdef public str amount_model             # <<<<<<<<<<<<<<
@@ -8932,7 +9035,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_12amount_model_2__set__(struct __pyx_obj_
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__set__", 0);
-  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 80, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 82, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -8982,12 +9085,12 @@ static int __pyx_pf_7QAOrder_8QA_Order_12amount_model_4__del__(struct __pyx_obj_
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":81
+/* "QAOrder.pyx":83
  *     cdef public float money
  *     cdef public str amount_model
  *     cdef public str broker             # <<<<<<<<<<<<<<
  *     cdef public str order_id
- *     cdef public list trade_id
+ *     cdef public str realorder_id
  */
 
 /* Python wrapper */
@@ -9037,7 +9140,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_6broker_2__set__(struct __pyx_obj_7QAOrde
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__set__", 0);
-  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 81, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 83, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -9087,12 +9190,12 @@ static int __pyx_pf_7QAOrder_8QA_Order_6broker_4__del__(struct __pyx_obj_7QAOrde
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":82
+/* "QAOrder.pyx":84
  *     cdef public str amount_model
  *     cdef public str broker
  *     cdef public str order_id             # <<<<<<<<<<<<<<
+ *     cdef public str realorder_id
  *     cdef public list trade_id
- *     cdef public str _status
  */
 
 /* Python wrapper */
@@ -9142,7 +9245,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_8order_id_2__set__(struct __pyx_obj_7QAOr
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__set__", 0);
-  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 82, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 84, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -9192,9 +9295,114 @@ static int __pyx_pf_7QAOrder_8QA_Order_8order_id_4__del__(struct __pyx_obj_7QAOr
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":83
+/* "QAOrder.pyx":85
  *     cdef public str broker
  *     cdef public str order_id
+ *     cdef public str realorder_id             # <<<<<<<<<<<<<<
+ *     cdef public list trade_id
+ *     cdef public str _status
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_12realorder_id_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_12realorder_id_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_12realorder_id___get__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_12realorder_id___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF(__pyx_v_self->realorder_id);
+  __pyx_r = __pyx_v_self->realorder_id;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_7QAOrder_8QA_Order_12realorder_id_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_7QAOrder_8QA_Order_12realorder_id_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_12realorder_id_2__set__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_7QAOrder_8QA_Order_12realorder_id_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  __Pyx_RefNannySetupContext("__set__", 0);
+  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 85, __pyx_L1_error)
+  __pyx_t_1 = __pyx_v_value;
+  __Pyx_INCREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF(__pyx_v_self->realorder_id);
+  __Pyx_DECREF(__pyx_v_self->realorder_id);
+  __pyx_v_self->realorder_id = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("QAOrder.QA_Order.realorder_id.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_7QAOrder_8QA_Order_12realorder_id_5__del__(PyObject *__pyx_v_self); /*proto*/
+static int __pyx_pw_7QAOrder_8QA_Order_12realorder_id_5__del__(PyObject *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_12realorder_id_4__del__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_7QAOrder_8QA_Order_12realorder_id_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__", 0);
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  __Pyx_GOTREF(__pyx_v_self->realorder_id);
+  __Pyx_DECREF(__pyx_v_self->realorder_id);
+  __pyx_v_self->realorder_id = ((PyObject*)Py_None);
+
+  /* function exit code */
+  __pyx_r = 0;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "QAOrder.pyx":86
+ *     cdef public str order_id
+ *     cdef public str realorder_id
  *     cdef public list trade_id             # <<<<<<<<<<<<<<
  *     cdef public str _status
  *     cdef public object callback
@@ -9247,7 +9455,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_8trade_id_2__set__(struct __pyx_obj_7QAOr
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__set__", 0);
-  if (!(likely(PyList_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 83, __pyx_L1_error)
+  if (!(likely(PyList_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 86, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -9297,8 +9505,8 @@ static int __pyx_pf_7QAOrder_8QA_Order_8trade_id_4__del__(struct __pyx_obj_7QAOr
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":84
- *     cdef public str order_id
+/* "QAOrder.pyx":87
+ *     cdef public str realorder_id
  *     cdef public list trade_id
  *     cdef public str _status             # <<<<<<<<<<<<<<
  *     cdef public object callback
@@ -9352,7 +9560,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_7_status_2__set__(struct __pyx_obj_7QAOrd
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__set__", 0);
-  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 84, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 87, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -9402,7 +9610,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_7_status_4__del__(struct __pyx_obj_7QAOrd
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":85
+/* "QAOrder.pyx":88
  *     cdef public list trade_id
  *     cdef public str _status
  *     cdef public object callback             # <<<<<<<<<<<<<<
@@ -9497,7 +9705,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_8callback_4__del__(struct __pyx_obj_7QAOr
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":86
+/* "QAOrder.pyx":89
  *     cdef public str _status
  *     cdef public object callback
  *     cdef public float commission_coeff             # <<<<<<<<<<<<<<
@@ -9524,7 +9732,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_16commission_coeff___get__(struct _
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->commission_coeff); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 86, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->commission_coeff); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 89, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -9559,7 +9767,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_16commission_coeff_2__set__(struct __pyx_
   __Pyx_RefNannyDeclarations
   float __pyx_t_1;
   __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_value); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 86, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_value); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 89, __pyx_L1_error)
   __pyx_v_self->commission_coeff = __pyx_t_1;
 
   /* function exit code */
@@ -9573,12 +9781,12 @@ static int __pyx_pf_7QAOrder_8QA_Order_16commission_coeff_2__set__(struct __pyx_
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":87
+/* "QAOrder.pyx":90
  *     cdef public object callback
  *     cdef public float commission_coeff
  *     cdef public float tax_coeff             # <<<<<<<<<<<<<<
  *     cdef public str exchange_id
- * 
+ *     cdef public float trade_price
  */
 
 /* Python wrapper */
@@ -9600,7 +9808,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_9tax_coeff___get__(struct __pyx_obj
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->tax_coeff); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 87, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->tax_coeff); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 90, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -9635,7 +9843,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_9tax_coeff_2__set__(struct __pyx_obj_7QAO
   __Pyx_RefNannyDeclarations
   float __pyx_t_1;
   __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_value); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 87, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_value); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 90, __pyx_L1_error)
   __pyx_v_self->tax_coeff = __pyx_t_1;
 
   /* function exit code */
@@ -9649,12 +9857,12 @@ static int __pyx_pf_7QAOrder_8QA_Order_9tax_coeff_2__set__(struct __pyx_obj_7QAO
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":88
+/* "QAOrder.pyx":91
  *     cdef public float commission_coeff
  *     cdef public float tax_coeff
  *     cdef public str exchange_id             # <<<<<<<<<<<<<<
- * 
- *     def __init__(
+ *     cdef public float trade_price
+ *     cdef public str reason
  */
 
 /* Python wrapper */
@@ -9704,7 +9912,7 @@ static int __pyx_pf_7QAOrder_8QA_Order_11exchange_id_2__set__(struct __pyx_obj_7
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__set__", 0);
-  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 88, __pyx_L1_error)
+  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 91, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -9754,6 +9962,397 @@ static int __pyx_pf_7QAOrder_8QA_Order_11exchange_id_4__del__(struct __pyx_obj_7
   return __pyx_r;
 }
 
+/* "QAOrder.pyx":92
+ *     cdef public float tax_coeff
+ *     cdef public str exchange_id
+ *     cdef public float trade_price             # <<<<<<<<<<<<<<
+ *     cdef public str reason
+ *     cdef public str time_condition
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_11trade_price_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_11trade_price_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_11trade_price___get__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_11trade_price___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->trade_price); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 92, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("QAOrder.QA_Order.trade_price.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_7QAOrder_8QA_Order_11trade_price_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_7QAOrder_8QA_Order_11trade_price_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_11trade_price_2__set__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_7QAOrder_8QA_Order_11trade_price_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  float __pyx_t_1;
+  __Pyx_RefNannySetupContext("__set__", 0);
+  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_value); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 92, __pyx_L1_error)
+  __pyx_v_self->trade_price = __pyx_t_1;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_AddTraceback("QAOrder.QA_Order.trade_price.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "QAOrder.pyx":93
+ *     cdef public str exchange_id
+ *     cdef public float trade_price
+ *     cdef public str reason             # <<<<<<<<<<<<<<
+ *     cdef public str time_condition
+ *     cdef public dict exchange_code
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_6reason_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_6reason_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_6reason___get__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_6reason___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF(__pyx_v_self->reason);
+  __pyx_r = __pyx_v_self->reason;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_7QAOrder_8QA_Order_6reason_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_7QAOrder_8QA_Order_6reason_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_6reason_2__set__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_7QAOrder_8QA_Order_6reason_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  __Pyx_RefNannySetupContext("__set__", 0);
+  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 93, __pyx_L1_error)
+  __pyx_t_1 = __pyx_v_value;
+  __Pyx_INCREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF(__pyx_v_self->reason);
+  __Pyx_DECREF(__pyx_v_self->reason);
+  __pyx_v_self->reason = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("QAOrder.QA_Order.reason.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_7QAOrder_8QA_Order_6reason_5__del__(PyObject *__pyx_v_self); /*proto*/
+static int __pyx_pw_7QAOrder_8QA_Order_6reason_5__del__(PyObject *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_6reason_4__del__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_7QAOrder_8QA_Order_6reason_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__", 0);
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  __Pyx_GOTREF(__pyx_v_self->reason);
+  __Pyx_DECREF(__pyx_v_self->reason);
+  __pyx_v_self->reason = ((PyObject*)Py_None);
+
+  /* function exit code */
+  __pyx_r = 0;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "QAOrder.pyx":94
+ *     cdef public float trade_price
+ *     cdef public str reason
+ *     cdef public str time_condition             # <<<<<<<<<<<<<<
+ *     cdef public dict exchange_code
+ * 
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_14time_condition_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_14time_condition_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_14time_condition___get__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_14time_condition___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF(__pyx_v_self->time_condition);
+  __pyx_r = __pyx_v_self->time_condition;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_7QAOrder_8QA_Order_14time_condition_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_7QAOrder_8QA_Order_14time_condition_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_14time_condition_2__set__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_7QAOrder_8QA_Order_14time_condition_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  __Pyx_RefNannySetupContext("__set__", 0);
+  if (!(likely(PyString_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 94, __pyx_L1_error)
+  __pyx_t_1 = __pyx_v_value;
+  __Pyx_INCREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF(__pyx_v_self->time_condition);
+  __Pyx_DECREF(__pyx_v_self->time_condition);
+  __pyx_v_self->time_condition = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("QAOrder.QA_Order.time_condition.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_7QAOrder_8QA_Order_14time_condition_5__del__(PyObject *__pyx_v_self); /*proto*/
+static int __pyx_pw_7QAOrder_8QA_Order_14time_condition_5__del__(PyObject *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_14time_condition_4__del__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_7QAOrder_8QA_Order_14time_condition_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__", 0);
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  __Pyx_GOTREF(__pyx_v_self->time_condition);
+  __Pyx_DECREF(__pyx_v_self->time_condition);
+  __pyx_v_self->time_condition = ((PyObject*)Py_None);
+
+  /* function exit code */
+  __pyx_r = 0;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "QAOrder.pyx":95
+ *     cdef public str reason
+ *     cdef public str time_condition
+ *     cdef public dict exchange_code             # <<<<<<<<<<<<<<
+ * 
+ *     def __init__(
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_13exchange_code_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_7QAOrder_8QA_Order_13exchange_code_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_13exchange_code___get__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_7QAOrder_8QA_Order_13exchange_code___get__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF(__pyx_v_self->exchange_code);
+  __pyx_r = __pyx_v_self->exchange_code;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_7QAOrder_8QA_Order_13exchange_code_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_7QAOrder_8QA_Order_13exchange_code_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_13exchange_code_2__set__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_7QAOrder_8QA_Order_13exchange_code_2__set__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  __Pyx_RefNannySetupContext("__set__", 0);
+  if (!(likely(PyDict_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "dict", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 95, __pyx_L1_error)
+  __pyx_t_1 = __pyx_v_value;
+  __Pyx_INCREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF(__pyx_v_self->exchange_code);
+  __Pyx_DECREF(__pyx_v_self->exchange_code);
+  __pyx_v_self->exchange_code = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("QAOrder.QA_Order.exchange_code.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_7QAOrder_8QA_Order_13exchange_code_5__del__(PyObject *__pyx_v_self); /*proto*/
+static int __pyx_pw_7QAOrder_8QA_Order_13exchange_code_5__del__(PyObject *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_7QAOrder_8QA_Order_13exchange_code_4__del__(((struct __pyx_obj_7QAOrder_QA_Order *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_7QAOrder_8QA_Order_13exchange_code_4__del__(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__", 0);
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  __Pyx_GOTREF(__pyx_v_self->exchange_code);
+  __Pyx_DECREF(__pyx_v_self->exchange_code);
+  __pyx_v_self->exchange_code = ((PyObject*)Py_None);
+
+  /* function exit code */
+  __pyx_r = 0;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
 /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
  *     cdef tuple state
@@ -9786,129 +10385,159 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_36__reduce_cython__(struct __pyx_ob
   PyObject *__pyx_t_5 = NULL;
   PyObject *__pyx_t_6 = NULL;
   PyObject *__pyx_t_7 = NULL;
-  int __pyx_t_8;
-  int __pyx_t_9;
-  int __pyx_t_10;
+  PyObject *__pyx_t_8 = NULL;
+  PyObject *__pyx_t_9 = NULL;
+  PyObject *__pyx_t_10 = NULL;
+  int __pyx_t_11;
+  int __pyx_t_12;
+  int __pyx_t_13;
   __Pyx_RefNannySetupContext("__reduce_cython__", 0);
 
   /* "(tree fragment)":5
  *     cdef object _dict
  *     cdef bint use_setstate
- *     state = (self._status, self.account_cookie, self.amount, self.amount_model, self.broker, self.callback, self.code, self.commission_coeff, self.date, self.datetime, self.exchange_id, self.frequence, self.market_type, self.money, self.order_id, self.order_model, self.price, self.sending_time, self.strategy, self.tax_coeff, self.towards, self.trade_id, self.trade_time, self.user)             # <<<<<<<<<<<<<<
+ *     state = (self._status, self.account_cookie, self.amount, self.amount_model, self.broker, self.callback, self.cancel_amount, self.code, self.commission_coeff, self.date, self.datetime, self.exchange_code, self.exchange_id, self.frequence, self.market_type, self.money, self.order_id, self.order_model, self.price, self.realorder_id, self.reason, self.sending_time, self.strategy, self.tax_coeff, self.time_condition, self.towards, self.trade_amount, self.trade_id, self.trade_price, self.trade_time, self.user_cookie)             # <<<<<<<<<<<<<<
  *     _dict = getattr(self, '__dict__', None)
  *     if _dict is not None:
  */
   __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->amount); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 5, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_self->commission_coeff); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 5, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_self->cancel_amount); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 5, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_self->money); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 5, __pyx_L1_error)
+  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_self->commission_coeff); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 5, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->price); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 5, __pyx_L1_error)
+  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->money); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 5, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_self->tax_coeff); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 5, __pyx_L1_error)
+  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_self->price); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 5, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = __Pyx_PyInt_From_int(__pyx_v_self->towards); if (unlikely(!__pyx_t_6)) __PYX_ERR(1, 5, __pyx_L1_error)
+  __pyx_t_6 = PyFloat_FromDouble(__pyx_v_self->tax_coeff); if (unlikely(!__pyx_t_6)) __PYX_ERR(1, 5, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_7 = PyTuple_New(24); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 5, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_self->towards); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 5, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_8 = PyFloat_FromDouble(__pyx_v_self->trade_amount); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 5, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __pyx_t_9 = PyFloat_FromDouble(__pyx_v_self->trade_price); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 5, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_9);
+  __pyx_t_10 = PyTuple_New(31); if (unlikely(!__pyx_t_10)) __PYX_ERR(1, 5, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_10);
   __Pyx_INCREF(__pyx_v_self->_status);
   __Pyx_GIVEREF(__pyx_v_self->_status);
-  PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_v_self->_status);
+  PyTuple_SET_ITEM(__pyx_t_10, 0, __pyx_v_self->_status);
   __Pyx_INCREF(__pyx_v_self->account_cookie);
   __Pyx_GIVEREF(__pyx_v_self->account_cookie);
-  PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_v_self->account_cookie);
+  PyTuple_SET_ITEM(__pyx_t_10, 1, __pyx_v_self->account_cookie);
   __Pyx_GIVEREF(__pyx_t_1);
-  PyTuple_SET_ITEM(__pyx_t_7, 2, __pyx_t_1);
+  PyTuple_SET_ITEM(__pyx_t_10, 2, __pyx_t_1);
   __Pyx_INCREF(__pyx_v_self->amount_model);
   __Pyx_GIVEREF(__pyx_v_self->amount_model);
-  PyTuple_SET_ITEM(__pyx_t_7, 3, __pyx_v_self->amount_model);
+  PyTuple_SET_ITEM(__pyx_t_10, 3, __pyx_v_self->amount_model);
   __Pyx_INCREF(__pyx_v_self->broker);
   __Pyx_GIVEREF(__pyx_v_self->broker);
-  PyTuple_SET_ITEM(__pyx_t_7, 4, __pyx_v_self->broker);
+  PyTuple_SET_ITEM(__pyx_t_10, 4, __pyx_v_self->broker);
   __Pyx_INCREF(__pyx_v_self->callback);
   __Pyx_GIVEREF(__pyx_v_self->callback);
-  PyTuple_SET_ITEM(__pyx_t_7, 5, __pyx_v_self->callback);
+  PyTuple_SET_ITEM(__pyx_t_10, 5, __pyx_v_self->callback);
+  __Pyx_GIVEREF(__pyx_t_2);
+  PyTuple_SET_ITEM(__pyx_t_10, 6, __pyx_t_2);
   __Pyx_INCREF(__pyx_v_self->code);
   __Pyx_GIVEREF(__pyx_v_self->code);
-  PyTuple_SET_ITEM(__pyx_t_7, 6, __pyx_v_self->code);
-  __Pyx_GIVEREF(__pyx_t_2);
-  PyTuple_SET_ITEM(__pyx_t_7, 7, __pyx_t_2);
+  PyTuple_SET_ITEM(__pyx_t_10, 7, __pyx_v_self->code);
+  __Pyx_GIVEREF(__pyx_t_3);
+  PyTuple_SET_ITEM(__pyx_t_10, 8, __pyx_t_3);
   __Pyx_INCREF(__pyx_v_self->date);
   __Pyx_GIVEREF(__pyx_v_self->date);
-  PyTuple_SET_ITEM(__pyx_t_7, 8, __pyx_v_self->date);
+  PyTuple_SET_ITEM(__pyx_t_10, 9, __pyx_v_self->date);
   __Pyx_INCREF(__pyx_v_self->datetime);
   __Pyx_GIVEREF(__pyx_v_self->datetime);
-  PyTuple_SET_ITEM(__pyx_t_7, 9, __pyx_v_self->datetime);
+  PyTuple_SET_ITEM(__pyx_t_10, 10, __pyx_v_self->datetime);
+  __Pyx_INCREF(__pyx_v_self->exchange_code);
+  __Pyx_GIVEREF(__pyx_v_self->exchange_code);
+  PyTuple_SET_ITEM(__pyx_t_10, 11, __pyx_v_self->exchange_code);
   __Pyx_INCREF(__pyx_v_self->exchange_id);
   __Pyx_GIVEREF(__pyx_v_self->exchange_id);
-  PyTuple_SET_ITEM(__pyx_t_7, 10, __pyx_v_self->exchange_id);
+  PyTuple_SET_ITEM(__pyx_t_10, 12, __pyx_v_self->exchange_id);
   __Pyx_INCREF(__pyx_v_self->frequence);
   __Pyx_GIVEREF(__pyx_v_self->frequence);
-  PyTuple_SET_ITEM(__pyx_t_7, 11, __pyx_v_self->frequence);
+  PyTuple_SET_ITEM(__pyx_t_10, 13, __pyx_v_self->frequence);
   __Pyx_INCREF(__pyx_v_self->market_type);
   __Pyx_GIVEREF(__pyx_v_self->market_type);
-  PyTuple_SET_ITEM(__pyx_t_7, 12, __pyx_v_self->market_type);
-  __Pyx_GIVEREF(__pyx_t_3);
-  PyTuple_SET_ITEM(__pyx_t_7, 13, __pyx_t_3);
+  PyTuple_SET_ITEM(__pyx_t_10, 14, __pyx_v_self->market_type);
+  __Pyx_GIVEREF(__pyx_t_4);
+  PyTuple_SET_ITEM(__pyx_t_10, 15, __pyx_t_4);
   __Pyx_INCREF(__pyx_v_self->order_id);
   __Pyx_GIVEREF(__pyx_v_self->order_id);
-  PyTuple_SET_ITEM(__pyx_t_7, 14, __pyx_v_self->order_id);
+  PyTuple_SET_ITEM(__pyx_t_10, 16, __pyx_v_self->order_id);
   __Pyx_INCREF(__pyx_v_self->order_model);
   __Pyx_GIVEREF(__pyx_v_self->order_model);
-  PyTuple_SET_ITEM(__pyx_t_7, 15, __pyx_v_self->order_model);
-  __Pyx_GIVEREF(__pyx_t_4);
-  PyTuple_SET_ITEM(__pyx_t_7, 16, __pyx_t_4);
+  PyTuple_SET_ITEM(__pyx_t_10, 17, __pyx_v_self->order_model);
+  __Pyx_GIVEREF(__pyx_t_5);
+  PyTuple_SET_ITEM(__pyx_t_10, 18, __pyx_t_5);
+  __Pyx_INCREF(__pyx_v_self->realorder_id);
+  __Pyx_GIVEREF(__pyx_v_self->realorder_id);
+  PyTuple_SET_ITEM(__pyx_t_10, 19, __pyx_v_self->realorder_id);
+  __Pyx_INCREF(__pyx_v_self->reason);
+  __Pyx_GIVEREF(__pyx_v_self->reason);
+  PyTuple_SET_ITEM(__pyx_t_10, 20, __pyx_v_self->reason);
   __Pyx_INCREF(__pyx_v_self->sending_time);
   __Pyx_GIVEREF(__pyx_v_self->sending_time);
-  PyTuple_SET_ITEM(__pyx_t_7, 17, __pyx_v_self->sending_time);
+  PyTuple_SET_ITEM(__pyx_t_10, 21, __pyx_v_self->sending_time);
   __Pyx_INCREF(__pyx_v_self->strategy);
   __Pyx_GIVEREF(__pyx_v_self->strategy);
-  PyTuple_SET_ITEM(__pyx_t_7, 18, __pyx_v_self->strategy);
-  __Pyx_GIVEREF(__pyx_t_5);
-  PyTuple_SET_ITEM(__pyx_t_7, 19, __pyx_t_5);
+  PyTuple_SET_ITEM(__pyx_t_10, 22, __pyx_v_self->strategy);
   __Pyx_GIVEREF(__pyx_t_6);
-  PyTuple_SET_ITEM(__pyx_t_7, 20, __pyx_t_6);
+  PyTuple_SET_ITEM(__pyx_t_10, 23, __pyx_t_6);
+  __Pyx_INCREF(__pyx_v_self->time_condition);
+  __Pyx_GIVEREF(__pyx_v_self->time_condition);
+  PyTuple_SET_ITEM(__pyx_t_10, 24, __pyx_v_self->time_condition);
+  __Pyx_GIVEREF(__pyx_t_7);
+  PyTuple_SET_ITEM(__pyx_t_10, 25, __pyx_t_7);
+  __Pyx_GIVEREF(__pyx_t_8);
+  PyTuple_SET_ITEM(__pyx_t_10, 26, __pyx_t_8);
   __Pyx_INCREF(__pyx_v_self->trade_id);
   __Pyx_GIVEREF(__pyx_v_self->trade_id);
-  PyTuple_SET_ITEM(__pyx_t_7, 21, __pyx_v_self->trade_id);
+  PyTuple_SET_ITEM(__pyx_t_10, 27, __pyx_v_self->trade_id);
+  __Pyx_GIVEREF(__pyx_t_9);
+  PyTuple_SET_ITEM(__pyx_t_10, 28, __pyx_t_9);
   __Pyx_INCREF(__pyx_v_self->trade_time);
   __Pyx_GIVEREF(__pyx_v_self->trade_time);
-  PyTuple_SET_ITEM(__pyx_t_7, 22, __pyx_v_self->trade_time);
-  __Pyx_INCREF(__pyx_v_self->user);
-  __Pyx_GIVEREF(__pyx_v_self->user);
-  PyTuple_SET_ITEM(__pyx_t_7, 23, __pyx_v_self->user);
+  PyTuple_SET_ITEM(__pyx_t_10, 29, __pyx_v_self->trade_time);
+  __Pyx_INCREF(__pyx_v_self->user_cookie);
+  __Pyx_GIVEREF(__pyx_v_self->user_cookie);
+  PyTuple_SET_ITEM(__pyx_t_10, 30, __pyx_v_self->user_cookie);
   __pyx_t_1 = 0;
   __pyx_t_2 = 0;
   __pyx_t_3 = 0;
   __pyx_t_4 = 0;
   __pyx_t_5 = 0;
   __pyx_t_6 = 0;
-  __pyx_v_state = ((PyObject*)__pyx_t_7);
   __pyx_t_7 = 0;
+  __pyx_t_8 = 0;
+  __pyx_t_9 = 0;
+  __pyx_v_state = ((PyObject*)__pyx_t_10);
+  __pyx_t_10 = 0;
 
   /* "(tree fragment)":6
  *     cdef bint use_setstate
- *     state = (self._status, self.account_cookie, self.amount, self.amount_model, self.broker, self.callback, self.code, self.commission_coeff, self.date, self.datetime, self.exchange_id, self.frequence, self.market_type, self.money, self.order_id, self.order_model, self.price, self.sending_time, self.strategy, self.tax_coeff, self.towards, self.trade_id, self.trade_time, self.user)
+ *     state = (self._status, self.account_cookie, self.amount, self.amount_model, self.broker, self.callback, self.cancel_amount, self.code, self.commission_coeff, self.date, self.datetime, self.exchange_code, self.exchange_id, self.frequence, self.market_type, self.money, self.order_id, self.order_model, self.price, self.realorder_id, self.reason, self.sending_time, self.strategy, self.tax_coeff, self.time_condition, self.towards, self.trade_amount, self.trade_id, self.trade_price, self.trade_time, self.user_cookie)
  *     _dict = getattr(self, '__dict__', None)             # <<<<<<<<<<<<<<
  *     if _dict is not None:
  *         state += (_dict,)
  */
-  __pyx_t_7 = __Pyx_GetAttr3(((PyObject *)__pyx_v_self), __pyx_n_s_dict, Py_None); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 6, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_7);
-  __pyx_v__dict = __pyx_t_7;
-  __pyx_t_7 = 0;
+  __pyx_t_10 = __Pyx_GetAttr3(((PyObject *)__pyx_v_self), __pyx_n_s_dict, Py_None); if (unlikely(!__pyx_t_10)) __PYX_ERR(1, 6, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_10);
+  __pyx_v__dict = __pyx_t_10;
+  __pyx_t_10 = 0;
 
   /* "(tree fragment)":7
- *     state = (self._status, self.account_cookie, self.amount, self.amount_model, self.broker, self.callback, self.code, self.commission_coeff, self.date, self.datetime, self.exchange_id, self.frequence, self.market_type, self.money, self.order_id, self.order_model, self.price, self.sending_time, self.strategy, self.tax_coeff, self.towards, self.trade_id, self.trade_time, self.user)
+ *     state = (self._status, self.account_cookie, self.amount, self.amount_model, self.broker, self.callback, self.cancel_amount, self.code, self.commission_coeff, self.date, self.datetime, self.exchange_code, self.exchange_id, self.frequence, self.market_type, self.money, self.order_id, self.order_model, self.price, self.realorder_id, self.reason, self.sending_time, self.strategy, self.tax_coeff, self.time_condition, self.towards, self.trade_amount, self.trade_id, self.trade_price, self.trade_time, self.user_cookie)
  *     _dict = getattr(self, '__dict__', None)
  *     if _dict is not None:             # <<<<<<<<<<<<<<
  *         state += (_dict,)
  *         use_setstate = True
  */
-  __pyx_t_8 = (__pyx_v__dict != Py_None);
-  __pyx_t_9 = (__pyx_t_8 != 0);
-  if (__pyx_t_9) {
+  __pyx_t_11 = (__pyx_v__dict != Py_None);
+  __pyx_t_12 = (__pyx_t_11 != 0);
+  if (__pyx_t_12) {
 
     /* "(tree fragment)":8
  *     _dict = getattr(self, '__dict__', None)
@@ -9917,28 +10546,28 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_36__reduce_cython__(struct __pyx_ob
  *         use_setstate = True
  *     else:
  */
-    __pyx_t_7 = PyTuple_New(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 8, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_7);
+    __pyx_t_10 = PyTuple_New(1); if (unlikely(!__pyx_t_10)) __PYX_ERR(1, 8, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_10);
     __Pyx_INCREF(__pyx_v__dict);
     __Pyx_GIVEREF(__pyx_v__dict);
-    PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_v__dict);
-    __pyx_t_6 = PyNumber_InPlaceAdd(__pyx_v_state, __pyx_t_7); if (unlikely(!__pyx_t_6)) __PYX_ERR(1, 8, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_6);
-    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_DECREF_SET(__pyx_v_state, ((PyObject*)__pyx_t_6));
-    __pyx_t_6 = 0;
+    PyTuple_SET_ITEM(__pyx_t_10, 0, __pyx_v__dict);
+    __pyx_t_9 = PyNumber_InPlaceAdd(__pyx_v_state, __pyx_t_10); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 8, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_9);
+    __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
+    __Pyx_DECREF_SET(__pyx_v_state, ((PyObject*)__pyx_t_9));
+    __pyx_t_9 = 0;
 
     /* "(tree fragment)":9
  *     if _dict is not None:
  *         state += (_dict,)
  *         use_setstate = True             # <<<<<<<<<<<<<<
  *     else:
- *         use_setstate = self._status is not None or self.account_cookie is not None or self.amount_model is not None or self.broker is not None or self.callback is not None or self.code is not None or self.date is not None or self.datetime is not None or self.exchange_id is not None or self.frequence is not None or self.market_type is not None or self.order_id is not None or self.order_model is not None or self.sending_time is not None or self.strategy is not None or self.trade_id is not None or self.trade_time is not None or self.user is not None
+ *         use_setstate = self._status is not None or self.account_cookie is not None or self.amount_model is not None or self.broker is not None or self.callback is not None or self.code is not None or self.date is not None or self.datetime is not None or self.exchange_code is not None or self.exchange_id is not None or self.frequence is not None or self.market_type is not None or self.order_id is not None or self.order_model is not None or self.realorder_id is not None or self.reason is not None or self.sending_time is not None or self.strategy is not None or self.time_condition is not None or self.trade_id is not None or self.trade_time is not None or self.user_cookie is not None
  */
     __pyx_v_use_setstate = 1;
 
     /* "(tree fragment)":7
- *     state = (self._status, self.account_cookie, self.amount, self.amount_model, self.broker, self.callback, self.code, self.commission_coeff, self.date, self.datetime, self.exchange_id, self.frequence, self.market_type, self.money, self.order_id, self.order_model, self.price, self.sending_time, self.strategy, self.tax_coeff, self.towards, self.trade_id, self.trade_time, self.user)
+ *     state = (self._status, self.account_cookie, self.amount, self.amount_model, self.broker, self.callback, self.cancel_amount, self.code, self.commission_coeff, self.date, self.datetime, self.exchange_code, self.exchange_id, self.frequence, self.market_type, self.money, self.order_id, self.order_model, self.price, self.realorder_id, self.reason, self.sending_time, self.strategy, self.tax_coeff, self.time_condition, self.towards, self.trade_amount, self.trade_id, self.trade_price, self.trade_time, self.user_cookie)
  *     _dict = getattr(self, '__dict__', None)
  *     if _dict is not None:             # <<<<<<<<<<<<<<
  *         state += (_dict,)
@@ -9950,225 +10579,253 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_36__reduce_cython__(struct __pyx_ob
   /* "(tree fragment)":11
  *         use_setstate = True
  *     else:
- *         use_setstate = self._status is not None or self.account_cookie is not None or self.amount_model is not None or self.broker is not None or self.callback is not None or self.code is not None or self.date is not None or self.datetime is not None or self.exchange_id is not None or self.frequence is not None or self.market_type is not None or self.order_id is not None or self.order_model is not None or self.sending_time is not None or self.strategy is not None or self.trade_id is not None or self.trade_time is not None or self.user is not None             # <<<<<<<<<<<<<<
+ *         use_setstate = self._status is not None or self.account_cookie is not None or self.amount_model is not None or self.broker is not None or self.callback is not None or self.code is not None or self.date is not None or self.datetime is not None or self.exchange_code is not None or self.exchange_id is not None or self.frequence is not None or self.market_type is not None or self.order_id is not None or self.order_model is not None or self.realorder_id is not None or self.reason is not None or self.sending_time is not None or self.strategy is not None or self.time_condition is not None or self.trade_id is not None or self.trade_time is not None or self.user_cookie is not None             # <<<<<<<<<<<<<<
  *     if use_setstate:
- *         return __pyx_unpickle_QA_Order, (type(self), 0x43fad51, None), state
+ *         return __pyx_unpickle_QA_Order, (type(self), 0x886f3b4, None), state
  */
   /*else*/ {
-    __pyx_t_8 = (__pyx_v_self->_status != ((PyObject*)Py_None));
-    __pyx_t_10 = (__pyx_t_8 != 0);
-    if (!__pyx_t_10) {
+    __pyx_t_11 = (__pyx_v_self->_status != ((PyObject*)Py_None));
+    __pyx_t_13 = (__pyx_t_11 != 0);
+    if (!__pyx_t_13) {
     } else {
-      __pyx_t_9 = __pyx_t_10;
+      __pyx_t_12 = __pyx_t_13;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_10 = (__pyx_v_self->account_cookie != ((PyObject*)Py_None));
-    __pyx_t_8 = (__pyx_t_10 != 0);
-    if (!__pyx_t_8) {
+    __pyx_t_13 = (__pyx_v_self->account_cookie != ((PyObject*)Py_None));
+    __pyx_t_11 = (__pyx_t_13 != 0);
+    if (!__pyx_t_11) {
     } else {
-      __pyx_t_9 = __pyx_t_8;
+      __pyx_t_12 = __pyx_t_11;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_8 = (__pyx_v_self->amount_model != ((PyObject*)Py_None));
-    __pyx_t_10 = (__pyx_t_8 != 0);
-    if (!__pyx_t_10) {
+    __pyx_t_11 = (__pyx_v_self->amount_model != ((PyObject*)Py_None));
+    __pyx_t_13 = (__pyx_t_11 != 0);
+    if (!__pyx_t_13) {
     } else {
-      __pyx_t_9 = __pyx_t_10;
+      __pyx_t_12 = __pyx_t_13;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_10 = (__pyx_v_self->broker != ((PyObject*)Py_None));
-    __pyx_t_8 = (__pyx_t_10 != 0);
-    if (!__pyx_t_8) {
+    __pyx_t_13 = (__pyx_v_self->broker != ((PyObject*)Py_None));
+    __pyx_t_11 = (__pyx_t_13 != 0);
+    if (!__pyx_t_11) {
     } else {
-      __pyx_t_9 = __pyx_t_8;
+      __pyx_t_12 = __pyx_t_11;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_8 = (__pyx_v_self->callback != Py_None);
-    __pyx_t_10 = (__pyx_t_8 != 0);
-    if (!__pyx_t_10) {
+    __pyx_t_11 = (__pyx_v_self->callback != Py_None);
+    __pyx_t_13 = (__pyx_t_11 != 0);
+    if (!__pyx_t_13) {
     } else {
-      __pyx_t_9 = __pyx_t_10;
+      __pyx_t_12 = __pyx_t_13;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_10 = (__pyx_v_self->code != ((PyObject*)Py_None));
-    __pyx_t_8 = (__pyx_t_10 != 0);
-    if (!__pyx_t_8) {
+    __pyx_t_13 = (__pyx_v_self->code != ((PyObject*)Py_None));
+    __pyx_t_11 = (__pyx_t_13 != 0);
+    if (!__pyx_t_11) {
     } else {
-      __pyx_t_9 = __pyx_t_8;
+      __pyx_t_12 = __pyx_t_11;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_8 = (__pyx_v_self->date != ((PyObject*)Py_None));
-    __pyx_t_10 = (__pyx_t_8 != 0);
-    if (!__pyx_t_10) {
+    __pyx_t_11 = (__pyx_v_self->date != ((PyObject*)Py_None));
+    __pyx_t_13 = (__pyx_t_11 != 0);
+    if (!__pyx_t_13) {
     } else {
-      __pyx_t_9 = __pyx_t_10;
+      __pyx_t_12 = __pyx_t_13;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_10 = (__pyx_v_self->datetime != ((PyObject*)Py_None));
-    __pyx_t_8 = (__pyx_t_10 != 0);
-    if (!__pyx_t_8) {
+    __pyx_t_13 = (__pyx_v_self->datetime != ((PyObject*)Py_None));
+    __pyx_t_11 = (__pyx_t_13 != 0);
+    if (!__pyx_t_11) {
     } else {
-      __pyx_t_9 = __pyx_t_8;
+      __pyx_t_12 = __pyx_t_11;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_8 = (__pyx_v_self->exchange_id != ((PyObject*)Py_None));
-    __pyx_t_10 = (__pyx_t_8 != 0);
-    if (!__pyx_t_10) {
+    __pyx_t_11 = (__pyx_v_self->exchange_code != ((PyObject*)Py_None));
+    __pyx_t_13 = (__pyx_t_11 != 0);
+    if (!__pyx_t_13) {
     } else {
-      __pyx_t_9 = __pyx_t_10;
+      __pyx_t_12 = __pyx_t_13;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_10 = (__pyx_v_self->frequence != ((PyObject*)Py_None));
-    __pyx_t_8 = (__pyx_t_10 != 0);
-    if (!__pyx_t_8) {
+    __pyx_t_13 = (__pyx_v_self->exchange_id != ((PyObject*)Py_None));
+    __pyx_t_11 = (__pyx_t_13 != 0);
+    if (!__pyx_t_11) {
     } else {
-      __pyx_t_9 = __pyx_t_8;
+      __pyx_t_12 = __pyx_t_11;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_8 = (__pyx_v_self->market_type != ((PyObject*)Py_None));
-    __pyx_t_10 = (__pyx_t_8 != 0);
-    if (!__pyx_t_10) {
+    __pyx_t_11 = (__pyx_v_self->frequence != ((PyObject*)Py_None));
+    __pyx_t_13 = (__pyx_t_11 != 0);
+    if (!__pyx_t_13) {
     } else {
-      __pyx_t_9 = __pyx_t_10;
+      __pyx_t_12 = __pyx_t_13;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_10 = (__pyx_v_self->order_id != ((PyObject*)Py_None));
-    __pyx_t_8 = (__pyx_t_10 != 0);
-    if (!__pyx_t_8) {
+    __pyx_t_13 = (__pyx_v_self->market_type != ((PyObject*)Py_None));
+    __pyx_t_11 = (__pyx_t_13 != 0);
+    if (!__pyx_t_11) {
     } else {
-      __pyx_t_9 = __pyx_t_8;
+      __pyx_t_12 = __pyx_t_11;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_8 = (__pyx_v_self->order_model != ((PyObject*)Py_None));
-    __pyx_t_10 = (__pyx_t_8 != 0);
-    if (!__pyx_t_10) {
+    __pyx_t_11 = (__pyx_v_self->order_id != ((PyObject*)Py_None));
+    __pyx_t_13 = (__pyx_t_11 != 0);
+    if (!__pyx_t_13) {
     } else {
-      __pyx_t_9 = __pyx_t_10;
+      __pyx_t_12 = __pyx_t_13;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_10 = (__pyx_v_self->sending_time != ((PyObject*)Py_None));
-    __pyx_t_8 = (__pyx_t_10 != 0);
-    if (!__pyx_t_8) {
+    __pyx_t_13 = (__pyx_v_self->order_model != ((PyObject*)Py_None));
+    __pyx_t_11 = (__pyx_t_13 != 0);
+    if (!__pyx_t_11) {
     } else {
-      __pyx_t_9 = __pyx_t_8;
+      __pyx_t_12 = __pyx_t_11;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_8 = (__pyx_v_self->strategy != ((PyObject*)Py_None));
-    __pyx_t_10 = (__pyx_t_8 != 0);
-    if (!__pyx_t_10) {
+    __pyx_t_11 = (__pyx_v_self->realorder_id != ((PyObject*)Py_None));
+    __pyx_t_13 = (__pyx_t_11 != 0);
+    if (!__pyx_t_13) {
     } else {
-      __pyx_t_9 = __pyx_t_10;
+      __pyx_t_12 = __pyx_t_13;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_10 = (__pyx_v_self->trade_id != ((PyObject*)Py_None));
-    __pyx_t_8 = (__pyx_t_10 != 0);
-    if (!__pyx_t_8) {
+    __pyx_t_13 = (__pyx_v_self->reason != ((PyObject*)Py_None));
+    __pyx_t_11 = (__pyx_t_13 != 0);
+    if (!__pyx_t_11) {
     } else {
-      __pyx_t_9 = __pyx_t_8;
+      __pyx_t_12 = __pyx_t_11;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_8 = (__pyx_v_self->trade_time != ((PyObject*)Py_None));
-    __pyx_t_10 = (__pyx_t_8 != 0);
-    if (!__pyx_t_10) {
+    __pyx_t_11 = (__pyx_v_self->sending_time != ((PyObject*)Py_None));
+    __pyx_t_13 = (__pyx_t_11 != 0);
+    if (!__pyx_t_13) {
     } else {
-      __pyx_t_9 = __pyx_t_10;
+      __pyx_t_12 = __pyx_t_13;
       goto __pyx_L4_bool_binop_done;
     }
-    __pyx_t_10 = (__pyx_v_self->user != ((PyObject*)Py_None));
-    __pyx_t_8 = (__pyx_t_10 != 0);
-    __pyx_t_9 = __pyx_t_8;
+    __pyx_t_13 = (__pyx_v_self->strategy != ((PyObject*)Py_None));
+    __pyx_t_11 = (__pyx_t_13 != 0);
+    if (!__pyx_t_11) {
+    } else {
+      __pyx_t_12 = __pyx_t_11;
+      goto __pyx_L4_bool_binop_done;
+    }
+    __pyx_t_11 = (__pyx_v_self->time_condition != ((PyObject*)Py_None));
+    __pyx_t_13 = (__pyx_t_11 != 0);
+    if (!__pyx_t_13) {
+    } else {
+      __pyx_t_12 = __pyx_t_13;
+      goto __pyx_L4_bool_binop_done;
+    }
+    __pyx_t_13 = (__pyx_v_self->trade_id != ((PyObject*)Py_None));
+    __pyx_t_11 = (__pyx_t_13 != 0);
+    if (!__pyx_t_11) {
+    } else {
+      __pyx_t_12 = __pyx_t_11;
+      goto __pyx_L4_bool_binop_done;
+    }
+    __pyx_t_11 = (__pyx_v_self->trade_time != ((PyObject*)Py_None));
+    __pyx_t_13 = (__pyx_t_11 != 0);
+    if (!__pyx_t_13) {
+    } else {
+      __pyx_t_12 = __pyx_t_13;
+      goto __pyx_L4_bool_binop_done;
+    }
+    __pyx_t_13 = (__pyx_v_self->user_cookie != ((PyObject*)Py_None));
+    __pyx_t_11 = (__pyx_t_13 != 0);
+    __pyx_t_12 = __pyx_t_11;
     __pyx_L4_bool_binop_done:;
-    __pyx_v_use_setstate = __pyx_t_9;
+    __pyx_v_use_setstate = __pyx_t_12;
   }
   __pyx_L3:;
 
   /* "(tree fragment)":12
  *     else:
- *         use_setstate = self._status is not None or self.account_cookie is not None or self.amount_model is not None or self.broker is not None or self.callback is not None or self.code is not None or self.date is not None or self.datetime is not None or self.exchange_id is not None or self.frequence is not None or self.market_type is not None or self.order_id is not None or self.order_model is not None or self.sending_time is not None or self.strategy is not None or self.trade_id is not None or self.trade_time is not None or self.user is not None
+ *         use_setstate = self._status is not None or self.account_cookie is not None or self.amount_model is not None or self.broker is not None or self.callback is not None or self.code is not None or self.date is not None or self.datetime is not None or self.exchange_code is not None or self.exchange_id is not None or self.frequence is not None or self.market_type is not None or self.order_id is not None or self.order_model is not None or self.realorder_id is not None or self.reason is not None or self.sending_time is not None or self.strategy is not None or self.time_condition is not None or self.trade_id is not None or self.trade_time is not None or self.user_cookie is not None
  *     if use_setstate:             # <<<<<<<<<<<<<<
- *         return __pyx_unpickle_QA_Order, (type(self), 0x43fad51, None), state
+ *         return __pyx_unpickle_QA_Order, (type(self), 0x886f3b4, None), state
  *     else:
  */
-  __pyx_t_9 = (__pyx_v_use_setstate != 0);
-  if (__pyx_t_9) {
+  __pyx_t_12 = (__pyx_v_use_setstate != 0);
+  if (__pyx_t_12) {
 
     /* "(tree fragment)":13
- *         use_setstate = self._status is not None or self.account_cookie is not None or self.amount_model is not None or self.broker is not None or self.callback is not None or self.code is not None or self.date is not None or self.datetime is not None or self.exchange_id is not None or self.frequence is not None or self.market_type is not None or self.order_id is not None or self.order_model is not None or self.sending_time is not None or self.strategy is not None or self.trade_id is not None or self.trade_time is not None or self.user is not None
+ *         use_setstate = self._status is not None or self.account_cookie is not None or self.amount_model is not None or self.broker is not None or self.callback is not None or self.code is not None or self.date is not None or self.datetime is not None or self.exchange_code is not None or self.exchange_id is not None or self.frequence is not None or self.market_type is not None or self.order_id is not None or self.order_model is not None or self.realorder_id is not None or self.reason is not None or self.sending_time is not None or self.strategy is not None or self.time_condition is not None or self.trade_id is not None or self.trade_time is not None or self.user_cookie is not None
  *     if use_setstate:
- *         return __pyx_unpickle_QA_Order, (type(self), 0x43fad51, None), state             # <<<<<<<<<<<<<<
+ *         return __pyx_unpickle_QA_Order, (type(self), 0x886f3b4, None), state             # <<<<<<<<<<<<<<
  *     else:
- *         return __pyx_unpickle_QA_Order, (type(self), 0x43fad51, state)
+ *         return __pyx_unpickle_QA_Order, (type(self), 0x886f3b4, state)
  */
     __Pyx_XDECREF(__pyx_r);
-    __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_pyx_unpickle_QA_Order); if (unlikely(!__pyx_t_6)) __PYX_ERR(1, 13, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_6);
-    __pyx_t_7 = PyTuple_New(3); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 13, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_7);
+    __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_n_s_pyx_unpickle_QA_Order); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 13, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_9);
+    __pyx_t_10 = PyTuple_New(3); if (unlikely(!__pyx_t_10)) __PYX_ERR(1, 13, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_10);
     __Pyx_INCREF(((PyObject *)Py_TYPE(((PyObject *)__pyx_v_self))));
     __Pyx_GIVEREF(((PyObject *)Py_TYPE(((PyObject *)__pyx_v_self))));
-    PyTuple_SET_ITEM(__pyx_t_7, 0, ((PyObject *)Py_TYPE(((PyObject *)__pyx_v_self))));
-    __Pyx_INCREF(__pyx_int_71282001);
-    __Pyx_GIVEREF(__pyx_int_71282001);
-    PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_int_71282001);
+    PyTuple_SET_ITEM(__pyx_t_10, 0, ((PyObject *)Py_TYPE(((PyObject *)__pyx_v_self))));
+    __Pyx_INCREF(__pyx_int_143061940);
+    __Pyx_GIVEREF(__pyx_int_143061940);
+    PyTuple_SET_ITEM(__pyx_t_10, 1, __pyx_int_143061940);
     __Pyx_INCREF(Py_None);
     __Pyx_GIVEREF(Py_None);
-    PyTuple_SET_ITEM(__pyx_t_7, 2, Py_None);
-    __pyx_t_5 = PyTuple_New(3); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 13, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
-    __Pyx_GIVEREF(__pyx_t_6);
-    PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_6);
-    __Pyx_GIVEREF(__pyx_t_7);
-    PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_t_7);
+    PyTuple_SET_ITEM(__pyx_t_10, 2, Py_None);
+    __pyx_t_8 = PyTuple_New(3); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 13, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_8);
+    __Pyx_GIVEREF(__pyx_t_9);
+    PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_9);
+    __Pyx_GIVEREF(__pyx_t_10);
+    PyTuple_SET_ITEM(__pyx_t_8, 1, __pyx_t_10);
     __Pyx_INCREF(__pyx_v_state);
     __Pyx_GIVEREF(__pyx_v_state);
-    PyTuple_SET_ITEM(__pyx_t_5, 2, __pyx_v_state);
-    __pyx_t_6 = 0;
-    __pyx_t_7 = 0;
-    __pyx_r = __pyx_t_5;
-    __pyx_t_5 = 0;
+    PyTuple_SET_ITEM(__pyx_t_8, 2, __pyx_v_state);
+    __pyx_t_9 = 0;
+    __pyx_t_10 = 0;
+    __pyx_r = __pyx_t_8;
+    __pyx_t_8 = 0;
     goto __pyx_L0;
 
     /* "(tree fragment)":12
  *     else:
- *         use_setstate = self._status is not None or self.account_cookie is not None or self.amount_model is not None or self.broker is not None or self.callback is not None or self.code is not None or self.date is not None or self.datetime is not None or self.exchange_id is not None or self.frequence is not None or self.market_type is not None or self.order_id is not None or self.order_model is not None or self.sending_time is not None or self.strategy is not None or self.trade_id is not None or self.trade_time is not None or self.user is not None
+ *         use_setstate = self._status is not None or self.account_cookie is not None or self.amount_model is not None or self.broker is not None or self.callback is not None or self.code is not None or self.date is not None or self.datetime is not None or self.exchange_code is not None or self.exchange_id is not None or self.frequence is not None or self.market_type is not None or self.order_id is not None or self.order_model is not None or self.realorder_id is not None or self.reason is not None or self.sending_time is not None or self.strategy is not None or self.time_condition is not None or self.trade_id is not None or self.trade_time is not None or self.user_cookie is not None
  *     if use_setstate:             # <<<<<<<<<<<<<<
- *         return __pyx_unpickle_QA_Order, (type(self), 0x43fad51, None), state
+ *         return __pyx_unpickle_QA_Order, (type(self), 0x886f3b4, None), state
  *     else:
  */
   }
 
   /* "(tree fragment)":15
- *         return __pyx_unpickle_QA_Order, (type(self), 0x43fad51, None), state
+ *         return __pyx_unpickle_QA_Order, (type(self), 0x886f3b4, None), state
  *     else:
- *         return __pyx_unpickle_QA_Order, (type(self), 0x43fad51, state)             # <<<<<<<<<<<<<<
+ *         return __pyx_unpickle_QA_Order, (type(self), 0x886f3b4, state)             # <<<<<<<<<<<<<<
  * def __setstate_cython__(self, __pyx_state):
  *     __pyx_unpickle_QA_Order__set_state(self, __pyx_state)
  */
   /*else*/ {
     __Pyx_XDECREF(__pyx_r);
-    __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_pyx_unpickle_QA_Order); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 15, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
-    __pyx_t_7 = PyTuple_New(3); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 15, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_7);
+    __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_n_s_pyx_unpickle_QA_Order); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 15, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_8);
+    __pyx_t_10 = PyTuple_New(3); if (unlikely(!__pyx_t_10)) __PYX_ERR(1, 15, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_10);
     __Pyx_INCREF(((PyObject *)Py_TYPE(((PyObject *)__pyx_v_self))));
     __Pyx_GIVEREF(((PyObject *)Py_TYPE(((PyObject *)__pyx_v_self))));
-    PyTuple_SET_ITEM(__pyx_t_7, 0, ((PyObject *)Py_TYPE(((PyObject *)__pyx_v_self))));
-    __Pyx_INCREF(__pyx_int_71282001);
-    __Pyx_GIVEREF(__pyx_int_71282001);
-    PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_int_71282001);
+    PyTuple_SET_ITEM(__pyx_t_10, 0, ((PyObject *)Py_TYPE(((PyObject *)__pyx_v_self))));
+    __Pyx_INCREF(__pyx_int_143061940);
+    __Pyx_GIVEREF(__pyx_int_143061940);
+    PyTuple_SET_ITEM(__pyx_t_10, 1, __pyx_int_143061940);
     __Pyx_INCREF(__pyx_v_state);
     __Pyx_GIVEREF(__pyx_v_state);
-    PyTuple_SET_ITEM(__pyx_t_7, 2, __pyx_v_state);
-    __pyx_t_6 = PyTuple_New(2); if (unlikely(!__pyx_t_6)) __PYX_ERR(1, 15, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_6);
-    __Pyx_GIVEREF(__pyx_t_5);
-    PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_5);
-    __Pyx_GIVEREF(__pyx_t_7);
-    PyTuple_SET_ITEM(__pyx_t_6, 1, __pyx_t_7);
-    __pyx_t_5 = 0;
-    __pyx_t_7 = 0;
-    __pyx_r = __pyx_t_6;
-    __pyx_t_6 = 0;
+    PyTuple_SET_ITEM(__pyx_t_10, 2, __pyx_v_state);
+    __pyx_t_9 = PyTuple_New(2); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 15, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_9);
+    __Pyx_GIVEREF(__pyx_t_8);
+    PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_t_8);
+    __Pyx_GIVEREF(__pyx_t_10);
+    PyTuple_SET_ITEM(__pyx_t_9, 1, __pyx_t_10);
+    __pyx_t_8 = 0;
+    __pyx_t_10 = 0;
+    __pyx_r = __pyx_t_9;
+    __pyx_t_9 = 0;
     goto __pyx_L0;
   }
 
@@ -10187,6 +10844,9 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_36__reduce_cython__(struct __pyx_ob
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_8);
+  __Pyx_XDECREF(__pyx_t_9);
+  __Pyx_XDECREF(__pyx_t_10);
   __Pyx_AddTraceback("QAOrder.QA_Order.__reduce_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
@@ -10199,7 +10859,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_36__reduce_cython__(struct __pyx_ob
 
 /* "(tree fragment)":16
  *     else:
- *         return __pyx_unpickle_QA_Order, (type(self), 0x43fad51, state)
+ *         return __pyx_unpickle_QA_Order, (type(self), 0x886f3b4, state)
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
  *     __pyx_unpickle_QA_Order__set_state(self, __pyx_state)
  */
@@ -10224,7 +10884,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_38__setstate_cython__(struct __pyx_
   __Pyx_RefNannySetupContext("__setstate_cython__", 0);
 
   /* "(tree fragment)":17
- *         return __pyx_unpickle_QA_Order, (type(self), 0x43fad51, state)
+ *         return __pyx_unpickle_QA_Order, (type(self), 0x886f3b4, state)
  * def __setstate_cython__(self, __pyx_state):
  *     __pyx_unpickle_QA_Order__set_state(self, __pyx_state)             # <<<<<<<<<<<<<<
  */
@@ -10235,7 +10895,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_38__setstate_cython__(struct __pyx_
 
   /* "(tree fragment)":16
  *     else:
- *         return __pyx_unpickle_QA_Order, (type(self), 0x43fad51, state)
+ *         return __pyx_unpickle_QA_Order, (type(self), 0x886f3b4, state)
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
  *     __pyx_unpickle_QA_Order__set_state(self, __pyx_state)
  */
@@ -10253,7 +10913,7 @@ static PyObject *__pyx_pf_7QAOrder_8QA_Order_38__setstate_cython__(struct __pyx_
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":565
+/* "QAOrder.pyx":570
  *     cdef public dict deal_list
  * 
  *     def __init__(self):             # <<<<<<<<<<<<<<
@@ -10287,14 +10947,14 @@ static int __pyx_pf_7QAOrder_13QA_OrderQueue___init__(struct __pyx_obj_7QAOrder_
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__init__", 0);
 
-  /* "QAOrder.pyx":573
+  /* "QAOrder.pyx":578
  *         """
  * 
  *         self.order_list = {}             # <<<<<<<<<<<<<<
  *         self.deal_list = {}
  * 
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 573, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 578, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v_self->order_list);
@@ -10302,14 +10962,14 @@ static int __pyx_pf_7QAOrder_13QA_OrderQueue___init__(struct __pyx_obj_7QAOrder_
   __pyx_v_self->order_list = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":574
+  /* "QAOrder.pyx":579
  * 
  *         self.order_list = {}
  *         self.deal_list = {}             # <<<<<<<<<<<<<<
  * 
  *     def __repr__(self):
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 574, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 579, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v_self->deal_list);
@@ -10317,7 +10977,7 @@ static int __pyx_pf_7QAOrder_13QA_OrderQueue___init__(struct __pyx_obj_7QAOrder_
   __pyx_v_self->deal_list = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":565
+  /* "QAOrder.pyx":570
  *     cdef public dict deal_list
  * 
  *     def __init__(self):             # <<<<<<<<<<<<<<
@@ -10337,7 +10997,7 @@ static int __pyx_pf_7QAOrder_13QA_OrderQueue___init__(struct __pyx_obj_7QAOrder_
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":576
+/* "QAOrder.pyx":581
  *         self.deal_list = {}
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -10363,7 +11023,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_2__repr__(CYTHON_UNUSED struc
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__repr__", 0);
 
-  /* "QAOrder.pyx":577
+  /* "QAOrder.pyx":582
  * 
  *     def __repr__(self):
  *         return '< QA_ORDERQueue >'             # <<<<<<<<<<<<<<
@@ -10375,7 +11035,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_2__repr__(CYTHON_UNUSED struc
   __pyx_r = __pyx_kp_s_QA_ORDERQueue;
   goto __pyx_L0;
 
-  /* "QAOrder.pyx":576
+  /* "QAOrder.pyx":581
  *         self.deal_list = {}
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -10390,7 +11050,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_2__repr__(CYTHON_UNUSED struc
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":580
+/* "QAOrder.pyx":585
  *         # return '< QA_OrderQueue AMOUNT {} WAITING TRADE {} >'.format(len(self.queue_df), len(self.pending))
  * 
  *     def __call__(self):             # <<<<<<<<<<<<<<
@@ -10419,7 +11079,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_4__call__(struct __pyx_obj_7Q
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__call__", 0);
 
-  /* "QAOrder.pyx":581
+  /* "QAOrder.pyx":586
  * 
  *     def __call__(self):
  *         return self.order_list             # <<<<<<<<<<<<<<
@@ -10431,7 +11091,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_4__call__(struct __pyx_obj_7Q
   __pyx_r = __pyx_v_self->order_list;
   goto __pyx_L0;
 
-  /* "QAOrder.pyx":580
+  /* "QAOrder.pyx":585
  *         # return '< QA_OrderQueue AMOUNT {} WAITING TRADE {} >'.format(len(self.queue_df), len(self.pending))
  * 
  *     def __call__(self):             # <<<<<<<<<<<<<<
@@ -10446,7 +11106,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_4__call__(struct __pyx_obj_7Q
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":583
+/* "QAOrder.pyx":588
  *         return self.order_list
  * 
  *     def insert_order(self, order):             # <<<<<<<<<<<<<<
@@ -10476,7 +11136,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6insert_order(struct __pyx_ob
   PyObject *__pyx_t_3 = NULL;
   __Pyx_RefNannySetupContext("insert_order", 0);
 
-  /* "QAOrder.pyx":594
+  /* "QAOrder.pyx":599
  *         #self.queue_df = self.queue_df.append(order.to_df(), ignore_index=True)
  *         #self.queue_df.set_index('order_id', drop=True, inplace=True)
  *         if order is not None:             # <<<<<<<<<<<<<<
@@ -10487,7 +11147,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6insert_order(struct __pyx_ob
   __pyx_t_2 = (__pyx_t_1 != 0);
   if (__pyx_t_2) {
 
-    /* "QAOrder.pyx":595
+    /* "QAOrder.pyx":600
  *         #self.queue_df.set_index('order_id', drop=True, inplace=True)
  *         if order is not None:
  *             self.order_list[order.order_id] = order             # <<<<<<<<<<<<<<
@@ -10496,14 +11156,14 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6insert_order(struct __pyx_ob
  */
     if (unlikely(__pyx_v_self->order_list == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-      __PYX_ERR(0, 595, __pyx_L1_error)
+      __PYX_ERR(0, 600, __pyx_L1_error)
     }
-    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_order, __pyx_n_s_order_id); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 595, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_order, __pyx_n_s_order_id); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 600, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    if (unlikely(PyDict_SetItem(__pyx_v_self->order_list, __pyx_t_3, __pyx_v_order) < 0)) __PYX_ERR(0, 595, __pyx_L1_error)
+    if (unlikely(PyDict_SetItem(__pyx_v_self->order_list, __pyx_t_3, __pyx_v_order) < 0)) __PYX_ERR(0, 600, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-    /* "QAOrder.pyx":596
+    /* "QAOrder.pyx":601
  *         if order is not None:
  *             self.order_list[order.order_id] = order
  *             return order             # <<<<<<<<<<<<<<
@@ -10515,7 +11175,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6insert_order(struct __pyx_ob
     __pyx_r = __pyx_v_order;
     goto __pyx_L0;
 
-    /* "QAOrder.pyx":594
+    /* "QAOrder.pyx":599
  *         #self.queue_df = self.queue_df.append(order.to_df(), ignore_index=True)
  *         #self.queue_df.set_index('order_id', drop=True, inplace=True)
  *         if order is not None:             # <<<<<<<<<<<<<<
@@ -10524,7 +11184,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6insert_order(struct __pyx_ob
  */
   }
 
-  /* "QAOrder.pyx":598
+  /* "QAOrder.pyx":603
  *             return order
  *         else:
  *             print('QAERROR Wrong for get None type while insert order to Queue')             # <<<<<<<<<<<<<<
@@ -10532,10 +11192,10 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6insert_order(struct __pyx_ob
  *     def update_order(self, order):
  */
   /*else*/ {
-    if (__Pyx_PrintOne(0, __pyx_kp_s_QAERROR_Wrong_for_get_None_type) < 0) __PYX_ERR(0, 598, __pyx_L1_error)
+    if (__Pyx_PrintOne(0, __pyx_kp_s_QAERROR_Wrong_for_get_None_type) < 0) __PYX_ERR(0, 603, __pyx_L1_error)
   }
 
-  /* "QAOrder.pyx":583
+  /* "QAOrder.pyx":588
  *         return self.order_list
  * 
  *     def insert_order(self, order):             # <<<<<<<<<<<<<<
@@ -10556,7 +11216,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6insert_order(struct __pyx_ob
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":600
+/* "QAOrder.pyx":605
  *             print('QAERROR Wrong for get None type while insert order to Queue')
  * 
  *     def update_order(self, order):             # <<<<<<<<<<<<<<
@@ -10583,7 +11243,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8update_order(struct __pyx_ob
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("update_order", 0);
 
-  /* "QAOrder.pyx":601
+  /* "QAOrder.pyx":606
  * 
  *     def update_order(self, order):
  *         self.order_list[order.order_id] = order             # <<<<<<<<<<<<<<
@@ -10592,14 +11252,14 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8update_order(struct __pyx_ob
  */
   if (unlikely(__pyx_v_self->order_list == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 601, __pyx_L1_error)
+    __PYX_ERR(0, 606, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_order, __pyx_n_s_order_id); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 601, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_order, __pyx_n_s_order_id); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 606, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (unlikely(PyDict_SetItem(__pyx_v_self->order_list, __pyx_t_1, __pyx_v_order) < 0)) __PYX_ERR(0, 601, __pyx_L1_error)
+  if (unlikely(PyDict_SetItem(__pyx_v_self->order_list, __pyx_t_1, __pyx_v_order) < 0)) __PYX_ERR(0, 606, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":600
+  /* "QAOrder.pyx":605
  *             print('QAERROR Wrong for get None type while insert order to Queue')
  * 
  *     def update_order(self, order):             # <<<<<<<<<<<<<<
@@ -10620,7 +11280,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8update_order(struct __pyx_ob
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":604
+/* "QAOrder.pyx":609
  * 
  *     @property
  *     def order_ids(self):             # <<<<<<<<<<<<<<
@@ -10648,7 +11308,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_9order_ids___get__(struct __p
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "QAOrder.pyx":605
+  /* "QAOrder.pyx":610
  *     @property
  *     def order_ids(self):
  *         return list(self.order_list.keys())             # <<<<<<<<<<<<<<
@@ -10658,18 +11318,18 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_9order_ids___get__(struct __p
   __Pyx_XDECREF(__pyx_r);
   if (unlikely(__pyx_v_self->order_list == Py_None)) {
     PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "keys");
-    __PYX_ERR(0, 605, __pyx_L1_error)
+    __PYX_ERR(0, 610, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_PyDict_Keys(__pyx_v_self->order_list); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 605, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_Keys(__pyx_v_self->order_list); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 610, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PySequence_List(__pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 605, __pyx_L1_error)
+  __pyx_t_2 = PySequence_List(__pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 610, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "QAOrder.pyx":604
+  /* "QAOrder.pyx":609
  * 
  *     @property
  *     def order_ids(self):             # <<<<<<<<<<<<<<
@@ -10689,7 +11349,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_9order_ids___get__(struct __p
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":608
+/* "QAOrder.pyx":613
  * 
  *     @property
  *     def len(self):             # <<<<<<<<<<<<<<
@@ -10717,7 +11377,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_3len___get__(struct __pyx_obj
   Py_ssize_t __pyx_t_2;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "QAOrder.pyx":609
+  /* "QAOrder.pyx":614
  *     @property
  *     def len(self):
  *         return len(self.order_list)             # <<<<<<<<<<<<<<
@@ -10729,17 +11389,17 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_3len___get__(struct __pyx_obj
   __Pyx_INCREF(__pyx_t_1);
   if (unlikely(__pyx_t_1 == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "object of type 'NoneType' has no len()");
-    __PYX_ERR(0, 609, __pyx_L1_error)
+    __PYX_ERR(0, 614, __pyx_L1_error)
   }
-  __pyx_t_2 = PyDict_Size(__pyx_t_1); if (unlikely(__pyx_t_2 == ((Py_ssize_t)-1))) __PYX_ERR(0, 609, __pyx_L1_error)
+  __pyx_t_2 = PyDict_Size(__pyx_t_1); if (unlikely(__pyx_t_2 == ((Py_ssize_t)-1))) __PYX_ERR(0, 614, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyInt_FromSsize_t(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 609, __pyx_L1_error)
+  __pyx_t_1 = PyInt_FromSsize_t(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 614, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "QAOrder.pyx":608
+  /* "QAOrder.pyx":613
  * 
  *     @property
  *     def len(self):             # <<<<<<<<<<<<<<
@@ -10758,7 +11418,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_3len___get__(struct __pyx_obj
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":611
+/* "QAOrder.pyx":616
  *         return len(self.order_list)
  * 
  *     def settle(self):             # <<<<<<<<<<<<<<
@@ -10788,14 +11448,14 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_10settle(struct __pyx_obj_7QA
   PyObject *__pyx_t_3 = NULL;
   __Pyx_RefNannySetupContext("settle", 0);
 
-  /* "QAOrder.pyx":615
+  /* "QAOrder.pyx":620
  * 
  *         """
  *         self.deal_list.update(self.order_list)             # <<<<<<<<<<<<<<
  *         self.order_list = {}
  * 
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self->deal_list, __pyx_n_s_update); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 615, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self->deal_list, __pyx_n_s_update); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 620, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -10809,19 +11469,19 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_10settle(struct __pyx_obj_7QA
   }
   __pyx_t_1 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_3, __pyx_v_self->order_list) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_v_self->order_list);
   __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 615, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 620, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":616
+  /* "QAOrder.pyx":621
  *         """
  *         self.deal_list.update(self.order_list)
  *         self.order_list = {}             # <<<<<<<<<<<<<<
  * 
  *     @property
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 616, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 621, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v_self->order_list);
@@ -10829,7 +11489,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_10settle(struct __pyx_obj_7QA
   __pyx_v_self->order_list = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":611
+  /* "QAOrder.pyx":616
  *         return len(self.order_list)
  * 
  *     def settle(self):             # <<<<<<<<<<<<<<
@@ -10852,7 +11512,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_10settle(struct __pyx_obj_7QA
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":619
+/* "QAOrder.pyx":624
  * 
  *     @property
  *     def pending(self):             # <<<<<<<<<<<<<<
@@ -10891,7 +11551,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
   int __pyx_t_12;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "QAOrder.pyx":636
+  /* "QAOrder.pyx":641
  *         :return: dataframe
  *         '''
  *         try:             # <<<<<<<<<<<<<<
@@ -10907,7 +11567,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
     __Pyx_XGOTREF(__pyx_t_3);
     /*try:*/ {
 
-      /* "QAOrder.pyx":637
+      /* "QAOrder.pyx":642
  *         '''
  *         try:
  *             return [             # <<<<<<<<<<<<<<
@@ -10915,10 +11575,10 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
  *                     ORDER_STATUS.QUEUED,
  */
       __Pyx_XDECREF(__pyx_r);
-      __pyx_t_4 = PyList_New(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 637, __pyx_L3_error)
+      __pyx_t_4 = PyList_New(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 642, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
 
-      /* "QAOrder.pyx":638
+      /* "QAOrder.pyx":643
  *         try:
  *             return [
  *                 item for item in self.order_list.values() if item.status in [             # <<<<<<<<<<<<<<
@@ -10927,17 +11587,17 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
  */
       if (unlikely(__pyx_v_self->order_list == Py_None)) {
         PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "values");
-        __PYX_ERR(0, 638, __pyx_L3_error)
+        __PYX_ERR(0, 643, __pyx_L3_error)
       }
-      __pyx_t_5 = __Pyx_PyDict_Values(__pyx_v_self->order_list); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 638, __pyx_L3_error)
+      __pyx_t_5 = __Pyx_PyDict_Values(__pyx_v_self->order_list); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 643, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_5);
       if (likely(PyList_CheckExact(__pyx_t_5)) || PyTuple_CheckExact(__pyx_t_5)) {
         __pyx_t_6 = __pyx_t_5; __Pyx_INCREF(__pyx_t_6); __pyx_t_7 = 0;
         __pyx_t_8 = NULL;
       } else {
-        __pyx_t_7 = -1; __pyx_t_6 = PyObject_GetIter(__pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 638, __pyx_L3_error)
+        __pyx_t_7 = -1; __pyx_t_6 = PyObject_GetIter(__pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 643, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_6);
-        __pyx_t_8 = Py_TYPE(__pyx_t_6)->tp_iternext; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 638, __pyx_L3_error)
+        __pyx_t_8 = Py_TYPE(__pyx_t_6)->tp_iternext; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 643, __pyx_L3_error)
       }
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
       for (;;) {
@@ -10945,17 +11605,17 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
           if (likely(PyList_CheckExact(__pyx_t_6))) {
             if (__pyx_t_7 >= PyList_GET_SIZE(__pyx_t_6)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_5 = PyList_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 638, __pyx_L3_error)
+            __pyx_t_5 = PyList_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 643, __pyx_L3_error)
             #else
-            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 638, __pyx_L3_error)
+            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 643, __pyx_L3_error)
             __Pyx_GOTREF(__pyx_t_5);
             #endif
           } else {
             if (__pyx_t_7 >= PyTuple_GET_SIZE(__pyx_t_6)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_5 = PyTuple_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 638, __pyx_L3_error)
+            __pyx_t_5 = PyTuple_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 643, __pyx_L3_error)
             #else
-            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 638, __pyx_L3_error)
+            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 643, __pyx_L3_error)
             __Pyx_GOTREF(__pyx_t_5);
             #endif
           }
@@ -10965,7 +11625,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
             PyObject* exc_type = PyErr_Occurred();
             if (exc_type) {
               if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-              else __PYX_ERR(0, 638, __pyx_L3_error)
+              else __PYX_ERR(0, 643, __pyx_L3_error)
             }
             break;
           }
@@ -10973,32 +11633,32 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
         }
         __Pyx_XDECREF_SET(__pyx_v_item, __pyx_t_5);
         __pyx_t_5 = 0;
-        __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_v_item, __pyx_n_s_status_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 638, __pyx_L3_error)
+        __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_v_item, __pyx_n_s_status_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 643, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_5);
 
-        /* "QAOrder.pyx":639
+        /* "QAOrder.pyx":644
  *             return [
  *                 item for item in self.order_list.values() if item.status in [
  *                     ORDER_STATUS.QUEUED,             # <<<<<<<<<<<<<<
  *                     ORDER_STATUS.NEXT,
  *                     ORDER_STATUS.SUCCESS_PART
  */
-        __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 639, __pyx_L3_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 644, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_10);
-        __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_n_s_QUEUED); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 639, __pyx_L3_error)
+        __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_n_s_QUEUED); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 644, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_11);
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-        __pyx_t_10 = PyObject_RichCompare(__pyx_t_5, __pyx_t_11, Py_EQ); __Pyx_XGOTREF(__pyx_t_10); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 638, __pyx_L3_error)
+        __pyx_t_10 = PyObject_RichCompare(__pyx_t_5, __pyx_t_11, Py_EQ); __Pyx_XGOTREF(__pyx_t_10); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 643, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
 
-        /* "QAOrder.pyx":638
+        /* "QAOrder.pyx":643
  *         try:
  *             return [
  *                 item for item in self.order_list.values() if item.status in [             # <<<<<<<<<<<<<<
  *                     ORDER_STATUS.QUEUED,
  *                     ORDER_STATUS.NEXT,
  */
-        __pyx_t_12 = __Pyx_PyObject_IsTrue(__pyx_t_10); if (unlikely(__pyx_t_12 < 0)) __PYX_ERR(0, 638, __pyx_L3_error)
+        __pyx_t_12 = __Pyx_PyObject_IsTrue(__pyx_t_10); if (unlikely(__pyx_t_12 < 0)) __PYX_ERR(0, 643, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
         if (!__pyx_t_12) {
         } else {
@@ -11006,29 +11666,29 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
           goto __pyx_L12_bool_binop_done;
         }
 
-        /* "QAOrder.pyx":640
+        /* "QAOrder.pyx":645
  *                 item for item in self.order_list.values() if item.status in [
  *                     ORDER_STATUS.QUEUED,
  *                     ORDER_STATUS.NEXT,             # <<<<<<<<<<<<<<
  *                     ORDER_STATUS.SUCCESS_PART
  *                 ]
  */
-        __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 640, __pyx_L3_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 645, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_10);
-        __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_n_s_NEXT); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 640, __pyx_L3_error)
+        __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_n_s_NEXT); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 645, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_11);
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-        __pyx_t_10 = PyObject_RichCompare(__pyx_t_5, __pyx_t_11, Py_EQ); __Pyx_XGOTREF(__pyx_t_10); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 638, __pyx_L3_error)
+        __pyx_t_10 = PyObject_RichCompare(__pyx_t_5, __pyx_t_11, Py_EQ); __Pyx_XGOTREF(__pyx_t_10); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 643, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
 
-        /* "QAOrder.pyx":638
+        /* "QAOrder.pyx":643
  *         try:
  *             return [
  *                 item for item in self.order_list.values() if item.status in [             # <<<<<<<<<<<<<<
  *                     ORDER_STATUS.QUEUED,
  *                     ORDER_STATUS.NEXT,
  */
-        __pyx_t_12 = __Pyx_PyObject_IsTrue(__pyx_t_10); if (unlikely(__pyx_t_12 < 0)) __PYX_ERR(0, 638, __pyx_L3_error)
+        __pyx_t_12 = __Pyx_PyObject_IsTrue(__pyx_t_10); if (unlikely(__pyx_t_12 < 0)) __PYX_ERR(0, 643, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
         if (!__pyx_t_12) {
         } else {
@@ -11036,36 +11696,36 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
           goto __pyx_L12_bool_binop_done;
         }
 
-        /* "QAOrder.pyx":641
+        /* "QAOrder.pyx":646
  *                     ORDER_STATUS.QUEUED,
  *                     ORDER_STATUS.NEXT,
  *                     ORDER_STATUS.SUCCESS_PART             # <<<<<<<<<<<<<<
  *                 ]
  *             ]
  */
-        __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 641, __pyx_L3_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 646, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_10);
-        __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_n_s_SUCCESS_PART); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 641, __pyx_L3_error)
+        __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_n_s_SUCCESS_PART); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 646, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_11);
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-        __pyx_t_10 = PyObject_RichCompare(__pyx_t_5, __pyx_t_11, Py_EQ); __Pyx_XGOTREF(__pyx_t_10); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 638, __pyx_L3_error)
+        __pyx_t_10 = PyObject_RichCompare(__pyx_t_5, __pyx_t_11, Py_EQ); __Pyx_XGOTREF(__pyx_t_10); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 643, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
 
-        /* "QAOrder.pyx":638
+        /* "QAOrder.pyx":643
  *         try:
  *             return [
  *                 item for item in self.order_list.values() if item.status in [             # <<<<<<<<<<<<<<
  *                     ORDER_STATUS.QUEUED,
  *                     ORDER_STATUS.NEXT,
  */
-        __pyx_t_12 = __Pyx_PyObject_IsTrue(__pyx_t_10); if (unlikely(__pyx_t_12 < 0)) __PYX_ERR(0, 638, __pyx_L3_error)
+        __pyx_t_12 = __Pyx_PyObject_IsTrue(__pyx_t_10); if (unlikely(__pyx_t_12 < 0)) __PYX_ERR(0, 643, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
         __pyx_t_9 = __pyx_t_12;
         __pyx_L12_bool_binop_done:;
         __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
         __pyx_t_12 = (__pyx_t_9 != 0);
         if (__pyx_t_12) {
-          if (unlikely(__Pyx_ListComp_Append(__pyx_t_4, (PyObject*)__pyx_v_item))) __PYX_ERR(0, 637, __pyx_L3_error)
+          if (unlikely(__Pyx_ListComp_Append(__pyx_t_4, (PyObject*)__pyx_v_item))) __PYX_ERR(0, 642, __pyx_L3_error)
         }
       }
       __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
@@ -11073,7 +11733,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
       __pyx_t_4 = 0;
       goto __pyx_L7_try_return;
 
-      /* "QAOrder.pyx":636
+      /* "QAOrder.pyx":641
  *         :return: dataframe
  *         '''
  *         try:             # <<<<<<<<<<<<<<
@@ -11088,7 +11748,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
 
-    /* "QAOrder.pyx":644
+    /* "QAOrder.pyx":649
  *                 ]
  *             ]
  *         except:             # <<<<<<<<<<<<<<
@@ -11097,12 +11757,12 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
  */
     /*except:*/ {
       __Pyx_AddTraceback("QAOrder.QA_OrderQueue.pending.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_6, &__pyx_t_5) < 0) __PYX_ERR(0, 644, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_6, &__pyx_t_5) < 0) __PYX_ERR(0, 649, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GOTREF(__pyx_t_5);
 
-      /* "QAOrder.pyx":645
+      /* "QAOrder.pyx":650
  *             ]
  *         except:
  *             return []             # <<<<<<<<<<<<<<
@@ -11110,7 +11770,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
  *     @property
  */
       __Pyx_XDECREF(__pyx_r);
-      __pyx_t_10 = PyList_New(0); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 645, __pyx_L5_except_error)
+      __pyx_t_10 = PyList_New(0); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 650, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_10);
       __pyx_r = __pyx_t_10;
       __pyx_t_10 = 0;
@@ -11121,7 +11781,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
     }
     __pyx_L5_except_error:;
 
-    /* "QAOrder.pyx":636
+    /* "QAOrder.pyx":641
  *         :return: dataframe
  *         '''
  *         try:             # <<<<<<<<<<<<<<
@@ -11147,7 +11807,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
     goto __pyx_L0;
   }
 
-  /* "QAOrder.pyx":619
+  /* "QAOrder.pyx":624
  * 
  *     @property
  *     def pending(self):             # <<<<<<<<<<<<<<
@@ -11171,7 +11831,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7pending___get__(struct __pyx
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":648
+/* "QAOrder.pyx":653
  * 
  *     @property
  *     def failed(self):             # <<<<<<<<<<<<<<
@@ -11210,7 +11870,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
   int __pyx_t_12;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "QAOrder.pyx":649
+  /* "QAOrder.pyx":654
  *     @property
  *     def failed(self):
  *         try:             # <<<<<<<<<<<<<<
@@ -11226,7 +11886,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
     __Pyx_XGOTREF(__pyx_t_3);
     /*try:*/ {
 
-      /* "QAOrder.pyx":650
+      /* "QAOrder.pyx":655
  *     def failed(self):
  *         try:
  *             return [             # <<<<<<<<<<<<<<
@@ -11234,10 +11894,10 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
  *                 if item.status in [ORDER_STATUS.FAILED]
  */
       __Pyx_XDECREF(__pyx_r);
-      __pyx_t_4 = PyList_New(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 650, __pyx_L3_error)
+      __pyx_t_4 = PyList_New(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 655, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
 
-      /* "QAOrder.pyx":651
+      /* "QAOrder.pyx":656
  *         try:
  *             return [
  *                 item for item in self.order_list.values()             # <<<<<<<<<<<<<<
@@ -11246,17 +11906,17 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
  */
       if (unlikely(__pyx_v_self->order_list == Py_None)) {
         PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "values");
-        __PYX_ERR(0, 651, __pyx_L3_error)
+        __PYX_ERR(0, 656, __pyx_L3_error)
       }
-      __pyx_t_5 = __Pyx_PyDict_Values(__pyx_v_self->order_list); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 651, __pyx_L3_error)
+      __pyx_t_5 = __Pyx_PyDict_Values(__pyx_v_self->order_list); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 656, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_5);
       if (likely(PyList_CheckExact(__pyx_t_5)) || PyTuple_CheckExact(__pyx_t_5)) {
         __pyx_t_6 = __pyx_t_5; __Pyx_INCREF(__pyx_t_6); __pyx_t_7 = 0;
         __pyx_t_8 = NULL;
       } else {
-        __pyx_t_7 = -1; __pyx_t_6 = PyObject_GetIter(__pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 651, __pyx_L3_error)
+        __pyx_t_7 = -1; __pyx_t_6 = PyObject_GetIter(__pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 656, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_6);
-        __pyx_t_8 = Py_TYPE(__pyx_t_6)->tp_iternext; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 651, __pyx_L3_error)
+        __pyx_t_8 = Py_TYPE(__pyx_t_6)->tp_iternext; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 656, __pyx_L3_error)
       }
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
       for (;;) {
@@ -11264,17 +11924,17 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
           if (likely(PyList_CheckExact(__pyx_t_6))) {
             if (__pyx_t_7 >= PyList_GET_SIZE(__pyx_t_6)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_5 = PyList_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 651, __pyx_L3_error)
+            __pyx_t_5 = PyList_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 656, __pyx_L3_error)
             #else
-            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 651, __pyx_L3_error)
+            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 656, __pyx_L3_error)
             __Pyx_GOTREF(__pyx_t_5);
             #endif
           } else {
             if (__pyx_t_7 >= PyTuple_GET_SIZE(__pyx_t_6)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_5 = PyTuple_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 651, __pyx_L3_error)
+            __pyx_t_5 = PyTuple_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 656, __pyx_L3_error)
             #else
-            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 651, __pyx_L3_error)
+            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 656, __pyx_L3_error)
             __Pyx_GOTREF(__pyx_t_5);
             #endif
           }
@@ -11284,7 +11944,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
             PyObject* exc_type = PyErr_Occurred();
             if (exc_type) {
               if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-              else __PYX_ERR(0, 651, __pyx_L3_error)
+              else __PYX_ERR(0, 656, __pyx_L3_error)
             }
             break;
           }
@@ -11293,38 +11953,38 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
         __Pyx_XDECREF_SET(__pyx_v_item, __pyx_t_5);
         __pyx_t_5 = 0;
 
-        /* "QAOrder.pyx":652
+        /* "QAOrder.pyx":657
  *             return [
  *                 item for item in self.order_list.values()
  *                 if item.status in [ORDER_STATUS.FAILED]             # <<<<<<<<<<<<<<
  *             ]
  *         except:
  */
-        __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_v_item, __pyx_n_s_status_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 652, __pyx_L3_error)
+        __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_v_item, __pyx_n_s_status_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 657, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_5);
-        __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 652, __pyx_L3_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 657, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_9);
-        __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_n_s_FAILED); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 652, __pyx_L3_error)
+        __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_n_s_FAILED); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 657, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_10);
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-        __pyx_t_9 = PyObject_RichCompare(__pyx_t_5, __pyx_t_10, Py_EQ); __Pyx_XGOTREF(__pyx_t_9); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 652, __pyx_L3_error)
+        __pyx_t_9 = PyObject_RichCompare(__pyx_t_5, __pyx_t_10, Py_EQ); __Pyx_XGOTREF(__pyx_t_9); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 657, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-        __pyx_t_11 = __Pyx_PyObject_IsTrue(__pyx_t_9); if (unlikely(__pyx_t_11 < 0)) __PYX_ERR(0, 652, __pyx_L3_error)
+        __pyx_t_11 = __Pyx_PyObject_IsTrue(__pyx_t_9); if (unlikely(__pyx_t_11 < 0)) __PYX_ERR(0, 657, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
         __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
         __pyx_t_12 = (__pyx_t_11 != 0);
         if (__pyx_t_12) {
 
-          /* "QAOrder.pyx":651
+          /* "QAOrder.pyx":656
  *         try:
  *             return [
  *                 item for item in self.order_list.values()             # <<<<<<<<<<<<<<
  *                 if item.status in [ORDER_STATUS.FAILED]
  *             ]
  */
-          if (unlikely(__Pyx_ListComp_Append(__pyx_t_4, (PyObject*)__pyx_v_item))) __PYX_ERR(0, 650, __pyx_L3_error)
+          if (unlikely(__Pyx_ListComp_Append(__pyx_t_4, (PyObject*)__pyx_v_item))) __PYX_ERR(0, 655, __pyx_L3_error)
 
-          /* "QAOrder.pyx":652
+          /* "QAOrder.pyx":657
  *             return [
  *                 item for item in self.order_list.values()
  *                 if item.status in [ORDER_STATUS.FAILED]             # <<<<<<<<<<<<<<
@@ -11333,7 +11993,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
  */
         }
 
-        /* "QAOrder.pyx":651
+        /* "QAOrder.pyx":656
  *         try:
  *             return [
  *                 item for item in self.order_list.values()             # <<<<<<<<<<<<<<
@@ -11346,7 +12006,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
       __pyx_t_4 = 0;
       goto __pyx_L7_try_return;
 
-      /* "QAOrder.pyx":649
+      /* "QAOrder.pyx":654
  *     @property
  *     def failed(self):
  *         try:             # <<<<<<<<<<<<<<
@@ -11361,7 +12021,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
     __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
 
-    /* "QAOrder.pyx":654
+    /* "QAOrder.pyx":659
  *                 if item.status in [ORDER_STATUS.FAILED]
  *             ]
  *         except:             # <<<<<<<<<<<<<<
@@ -11370,12 +12030,12 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
  */
     /*except:*/ {
       __Pyx_AddTraceback("QAOrder.QA_OrderQueue.failed.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_6, &__pyx_t_5) < 0) __PYX_ERR(0, 654, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_6, &__pyx_t_5) < 0) __PYX_ERR(0, 659, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GOTREF(__pyx_t_5);
 
-      /* "QAOrder.pyx":655
+      /* "QAOrder.pyx":660
  *             ]
  *         except:
  *             return []             # <<<<<<<<<<<<<<
@@ -11383,7 +12043,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
  *     @property
  */
       __Pyx_XDECREF(__pyx_r);
-      __pyx_t_9 = PyList_New(0); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 655, __pyx_L5_except_error)
+      __pyx_t_9 = PyList_New(0); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 660, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_9);
       __pyx_r = __pyx_t_9;
       __pyx_t_9 = 0;
@@ -11394,7 +12054,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
     }
     __pyx_L5_except_error:;
 
-    /* "QAOrder.pyx":649
+    /* "QAOrder.pyx":654
  *     @property
  *     def failed(self):
  *         try:             # <<<<<<<<<<<<<<
@@ -11420,7 +12080,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
     goto __pyx_L0;
   }
 
-  /* "QAOrder.pyx":648
+  /* "QAOrder.pyx":653
  * 
  *     @property
  *     def failed(self):             # <<<<<<<<<<<<<<
@@ -11444,7 +12104,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_6failed___get__(struct __pyx_
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":658
+/* "QAOrder.pyx":663
  * 
  *     @property
  *     def canceled(self):             # <<<<<<<<<<<<<<
@@ -11483,7 +12143,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
   int __pyx_t_12;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "QAOrder.pyx":659
+  /* "QAOrder.pyx":664
  *     @property
  *     def canceled(self):
  *         try:             # <<<<<<<<<<<<<<
@@ -11499,7 +12159,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
     __Pyx_XGOTREF(__pyx_t_3);
     /*try:*/ {
 
-      /* "QAOrder.pyx":660
+      /* "QAOrder.pyx":665
  *     def canceled(self):
  *         try:
  *             return [             # <<<<<<<<<<<<<<
@@ -11507,10 +12167,10 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
  *                 [ORDER_STATUS.CANCEL_ALL,
  */
       __Pyx_XDECREF(__pyx_r);
-      __pyx_t_4 = PyList_New(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 660, __pyx_L3_error)
+      __pyx_t_4 = PyList_New(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 665, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
 
-      /* "QAOrder.pyx":661
+      /* "QAOrder.pyx":666
  *         try:
  *             return [
  *                 item for item in self.order_list.values() if item.status in             # <<<<<<<<<<<<<<
@@ -11519,17 +12179,17 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
  */
       if (unlikely(__pyx_v_self->order_list == Py_None)) {
         PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "values");
-        __PYX_ERR(0, 661, __pyx_L3_error)
+        __PYX_ERR(0, 666, __pyx_L3_error)
       }
-      __pyx_t_5 = __Pyx_PyDict_Values(__pyx_v_self->order_list); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 661, __pyx_L3_error)
+      __pyx_t_5 = __Pyx_PyDict_Values(__pyx_v_self->order_list); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 666, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_5);
       if (likely(PyList_CheckExact(__pyx_t_5)) || PyTuple_CheckExact(__pyx_t_5)) {
         __pyx_t_6 = __pyx_t_5; __Pyx_INCREF(__pyx_t_6); __pyx_t_7 = 0;
         __pyx_t_8 = NULL;
       } else {
-        __pyx_t_7 = -1; __pyx_t_6 = PyObject_GetIter(__pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 661, __pyx_L3_error)
+        __pyx_t_7 = -1; __pyx_t_6 = PyObject_GetIter(__pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 666, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_6);
-        __pyx_t_8 = Py_TYPE(__pyx_t_6)->tp_iternext; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 661, __pyx_L3_error)
+        __pyx_t_8 = Py_TYPE(__pyx_t_6)->tp_iternext; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 666, __pyx_L3_error)
       }
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
       for (;;) {
@@ -11537,17 +12197,17 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
           if (likely(PyList_CheckExact(__pyx_t_6))) {
             if (__pyx_t_7 >= PyList_GET_SIZE(__pyx_t_6)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_5 = PyList_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 661, __pyx_L3_error)
+            __pyx_t_5 = PyList_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 666, __pyx_L3_error)
             #else
-            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 661, __pyx_L3_error)
+            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 666, __pyx_L3_error)
             __Pyx_GOTREF(__pyx_t_5);
             #endif
           } else {
             if (__pyx_t_7 >= PyTuple_GET_SIZE(__pyx_t_6)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_5 = PyTuple_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 661, __pyx_L3_error)
+            __pyx_t_5 = PyTuple_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 666, __pyx_L3_error)
             #else
-            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 661, __pyx_L3_error)
+            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 666, __pyx_L3_error)
             __Pyx_GOTREF(__pyx_t_5);
             #endif
           }
@@ -11557,7 +12217,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
             PyObject* exc_type = PyErr_Occurred();
             if (exc_type) {
               if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-              else __PYX_ERR(0, 661, __pyx_L3_error)
+              else __PYX_ERR(0, 666, __pyx_L3_error)
             }
             break;
           }
@@ -11565,32 +12225,32 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
         }
         __Pyx_XDECREF_SET(__pyx_v_item, __pyx_t_5);
         __pyx_t_5 = 0;
-        __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_v_item, __pyx_n_s_status_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 661, __pyx_L3_error)
+        __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_v_item, __pyx_n_s_status_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 666, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_5);
 
-        /* "QAOrder.pyx":662
+        /* "QAOrder.pyx":667
  *             return [
  *                 item for item in self.order_list.values() if item.status in
  *                 [ORDER_STATUS.CANCEL_ALL,             # <<<<<<<<<<<<<<
  *                  ORDER_STATUS.CANCEL_PART]
  *             ]
  */
-        __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 662, __pyx_L3_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 667, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_10);
-        __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_n_s_CANCEL_ALL); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 662, __pyx_L3_error)
+        __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_n_s_CANCEL_ALL); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 667, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_11);
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-        __pyx_t_10 = PyObject_RichCompare(__pyx_t_5, __pyx_t_11, Py_EQ); __Pyx_XGOTREF(__pyx_t_10); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 661, __pyx_L3_error)
+        __pyx_t_10 = PyObject_RichCompare(__pyx_t_5, __pyx_t_11, Py_EQ); __Pyx_XGOTREF(__pyx_t_10); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 666, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
 
-        /* "QAOrder.pyx":661
+        /* "QAOrder.pyx":666
  *         try:
  *             return [
  *                 item for item in self.order_list.values() if item.status in             # <<<<<<<<<<<<<<
  *                 [ORDER_STATUS.CANCEL_ALL,
  *                  ORDER_STATUS.CANCEL_PART]
  */
-        __pyx_t_12 = __Pyx_PyObject_IsTrue(__pyx_t_10); if (unlikely(__pyx_t_12 < 0)) __PYX_ERR(0, 661, __pyx_L3_error)
+        __pyx_t_12 = __Pyx_PyObject_IsTrue(__pyx_t_10); if (unlikely(__pyx_t_12 < 0)) __PYX_ERR(0, 666, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
         if (!__pyx_t_12) {
         } else {
@@ -11598,36 +12258,36 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
           goto __pyx_L12_bool_binop_done;
         }
 
-        /* "QAOrder.pyx":663
+        /* "QAOrder.pyx":668
  *                 item for item in self.order_list.values() if item.status in
  *                 [ORDER_STATUS.CANCEL_ALL,
  *                  ORDER_STATUS.CANCEL_PART]             # <<<<<<<<<<<<<<
  *             ]
  *         except:
  */
-        __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 663, __pyx_L3_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 668, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_10);
-        __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_n_s_CANCEL_PART); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 663, __pyx_L3_error)
+        __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_n_s_CANCEL_PART); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 668, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_11);
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-        __pyx_t_10 = PyObject_RichCompare(__pyx_t_5, __pyx_t_11, Py_EQ); __Pyx_XGOTREF(__pyx_t_10); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 661, __pyx_L3_error)
+        __pyx_t_10 = PyObject_RichCompare(__pyx_t_5, __pyx_t_11, Py_EQ); __Pyx_XGOTREF(__pyx_t_10); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 666, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
 
-        /* "QAOrder.pyx":661
+        /* "QAOrder.pyx":666
  *         try:
  *             return [
  *                 item for item in self.order_list.values() if item.status in             # <<<<<<<<<<<<<<
  *                 [ORDER_STATUS.CANCEL_ALL,
  *                  ORDER_STATUS.CANCEL_PART]
  */
-        __pyx_t_12 = __Pyx_PyObject_IsTrue(__pyx_t_10); if (unlikely(__pyx_t_12 < 0)) __PYX_ERR(0, 661, __pyx_L3_error)
+        __pyx_t_12 = __Pyx_PyObject_IsTrue(__pyx_t_10); if (unlikely(__pyx_t_12 < 0)) __PYX_ERR(0, 666, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
         __pyx_t_9 = __pyx_t_12;
         __pyx_L12_bool_binop_done:;
         __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
         __pyx_t_12 = (__pyx_t_9 != 0);
         if (__pyx_t_12) {
-          if (unlikely(__Pyx_ListComp_Append(__pyx_t_4, (PyObject*)__pyx_v_item))) __PYX_ERR(0, 660, __pyx_L3_error)
+          if (unlikely(__Pyx_ListComp_Append(__pyx_t_4, (PyObject*)__pyx_v_item))) __PYX_ERR(0, 665, __pyx_L3_error)
         }
       }
       __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
@@ -11635,7 +12295,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
       __pyx_t_4 = 0;
       goto __pyx_L7_try_return;
 
-      /* "QAOrder.pyx":659
+      /* "QAOrder.pyx":664
  *     @property
  *     def canceled(self):
  *         try:             # <<<<<<<<<<<<<<
@@ -11650,7 +12310,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
 
-    /* "QAOrder.pyx":665
+    /* "QAOrder.pyx":670
  *                  ORDER_STATUS.CANCEL_PART]
  *             ]
  *         except:             # <<<<<<<<<<<<<<
@@ -11659,12 +12319,12 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
  */
     /*except:*/ {
       __Pyx_AddTraceback("QAOrder.QA_OrderQueue.canceled.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_6, &__pyx_t_5) < 0) __PYX_ERR(0, 665, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_6, &__pyx_t_5) < 0) __PYX_ERR(0, 670, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GOTREF(__pyx_t_5);
 
-      /* "QAOrder.pyx":666
+      /* "QAOrder.pyx":671
  *             ]
  *         except:
  *             return []             # <<<<<<<<<<<<<<
@@ -11672,7 +12332,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
  *     @property
  */
       __Pyx_XDECREF(__pyx_r);
-      __pyx_t_10 = PyList_New(0); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 666, __pyx_L5_except_error)
+      __pyx_t_10 = PyList_New(0); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 671, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_10);
       __pyx_r = __pyx_t_10;
       __pyx_t_10 = 0;
@@ -11683,7 +12343,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
     }
     __pyx_L5_except_error:;
 
-    /* "QAOrder.pyx":659
+    /* "QAOrder.pyx":664
  *     @property
  *     def canceled(self):
  *         try:             # <<<<<<<<<<<<<<
@@ -11709,7 +12369,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
     goto __pyx_L0;
   }
 
-  /* "QAOrder.pyx":658
+  /* "QAOrder.pyx":663
  * 
  *     @property
  *     def canceled(self):             # <<<<<<<<<<<<<<
@@ -11733,7 +12393,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_8canceled___get__(struct __py
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":669
+/* "QAOrder.pyx":674
  * 
  *     @property
  *     def untrade(self):             # <<<<<<<<<<<<<<
@@ -11772,7 +12432,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
   int __pyx_t_12;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "QAOrder.pyx":670
+  /* "QAOrder.pyx":675
  *     @property
  *     def untrade(self):
  *         try:             # <<<<<<<<<<<<<<
@@ -11788,7 +12448,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
     __Pyx_XGOTREF(__pyx_t_3);
     /*try:*/ {
 
-      /* "QAOrder.pyx":671
+      /* "QAOrder.pyx":676
  *     def untrade(self):
  *         try:
  *             return [             # <<<<<<<<<<<<<<
@@ -11796,10 +12456,10 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
  *                 if item.status in [ORDER_STATUS.QUEUED]
  */
       __Pyx_XDECREF(__pyx_r);
-      __pyx_t_4 = PyList_New(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 671, __pyx_L3_error)
+      __pyx_t_4 = PyList_New(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 676, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
 
-      /* "QAOrder.pyx":672
+      /* "QAOrder.pyx":677
  *         try:
  *             return [
  *                 item for item in self.order_list.values()             # <<<<<<<<<<<<<<
@@ -11808,17 +12468,17 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
  */
       if (unlikely(__pyx_v_self->order_list == Py_None)) {
         PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "values");
-        __PYX_ERR(0, 672, __pyx_L3_error)
+        __PYX_ERR(0, 677, __pyx_L3_error)
       }
-      __pyx_t_5 = __Pyx_PyDict_Values(__pyx_v_self->order_list); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 672, __pyx_L3_error)
+      __pyx_t_5 = __Pyx_PyDict_Values(__pyx_v_self->order_list); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 677, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_5);
       if (likely(PyList_CheckExact(__pyx_t_5)) || PyTuple_CheckExact(__pyx_t_5)) {
         __pyx_t_6 = __pyx_t_5; __Pyx_INCREF(__pyx_t_6); __pyx_t_7 = 0;
         __pyx_t_8 = NULL;
       } else {
-        __pyx_t_7 = -1; __pyx_t_6 = PyObject_GetIter(__pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 672, __pyx_L3_error)
+        __pyx_t_7 = -1; __pyx_t_6 = PyObject_GetIter(__pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 677, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_6);
-        __pyx_t_8 = Py_TYPE(__pyx_t_6)->tp_iternext; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 672, __pyx_L3_error)
+        __pyx_t_8 = Py_TYPE(__pyx_t_6)->tp_iternext; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 677, __pyx_L3_error)
       }
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
       for (;;) {
@@ -11826,17 +12486,17 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
           if (likely(PyList_CheckExact(__pyx_t_6))) {
             if (__pyx_t_7 >= PyList_GET_SIZE(__pyx_t_6)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_5 = PyList_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 672, __pyx_L3_error)
+            __pyx_t_5 = PyList_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 677, __pyx_L3_error)
             #else
-            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 672, __pyx_L3_error)
+            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 677, __pyx_L3_error)
             __Pyx_GOTREF(__pyx_t_5);
             #endif
           } else {
             if (__pyx_t_7 >= PyTuple_GET_SIZE(__pyx_t_6)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_5 = PyTuple_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 672, __pyx_L3_error)
+            __pyx_t_5 = PyTuple_GET_ITEM(__pyx_t_6, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 677, __pyx_L3_error)
             #else
-            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 672, __pyx_L3_error)
+            __pyx_t_5 = PySequence_ITEM(__pyx_t_6, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 677, __pyx_L3_error)
             __Pyx_GOTREF(__pyx_t_5);
             #endif
           }
@@ -11846,7 +12506,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
             PyObject* exc_type = PyErr_Occurred();
             if (exc_type) {
               if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-              else __PYX_ERR(0, 672, __pyx_L3_error)
+              else __PYX_ERR(0, 677, __pyx_L3_error)
             }
             break;
           }
@@ -11855,38 +12515,38 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
         __Pyx_XDECREF_SET(__pyx_v_item, __pyx_t_5);
         __pyx_t_5 = 0;
 
-        /* "QAOrder.pyx":673
+        /* "QAOrder.pyx":678
  *             return [
  *                 item for item in self.order_list.values()
  *                 if item.status in [ORDER_STATUS.QUEUED]             # <<<<<<<<<<<<<<
  *             ]
  *         except:
  */
-        __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_v_item, __pyx_n_s_status_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 673, __pyx_L3_error)
+        __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_v_item, __pyx_n_s_status_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 678, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_5);
-        __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 673, __pyx_L3_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 678, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_9);
-        __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_n_s_QUEUED); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 673, __pyx_L3_error)
+        __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_n_s_QUEUED); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 678, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_10);
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-        __pyx_t_9 = PyObject_RichCompare(__pyx_t_5, __pyx_t_10, Py_EQ); __Pyx_XGOTREF(__pyx_t_9); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 673, __pyx_L3_error)
+        __pyx_t_9 = PyObject_RichCompare(__pyx_t_5, __pyx_t_10, Py_EQ); __Pyx_XGOTREF(__pyx_t_9); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 678, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-        __pyx_t_11 = __Pyx_PyObject_IsTrue(__pyx_t_9); if (unlikely(__pyx_t_11 < 0)) __PYX_ERR(0, 673, __pyx_L3_error)
+        __pyx_t_11 = __Pyx_PyObject_IsTrue(__pyx_t_9); if (unlikely(__pyx_t_11 < 0)) __PYX_ERR(0, 678, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
         __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
         __pyx_t_12 = (__pyx_t_11 != 0);
         if (__pyx_t_12) {
 
-          /* "QAOrder.pyx":672
+          /* "QAOrder.pyx":677
  *         try:
  *             return [
  *                 item for item in self.order_list.values()             # <<<<<<<<<<<<<<
  *                 if item.status in [ORDER_STATUS.QUEUED]
  *             ]
  */
-          if (unlikely(__Pyx_ListComp_Append(__pyx_t_4, (PyObject*)__pyx_v_item))) __PYX_ERR(0, 671, __pyx_L3_error)
+          if (unlikely(__Pyx_ListComp_Append(__pyx_t_4, (PyObject*)__pyx_v_item))) __PYX_ERR(0, 676, __pyx_L3_error)
 
-          /* "QAOrder.pyx":673
+          /* "QAOrder.pyx":678
  *             return [
  *                 item for item in self.order_list.values()
  *                 if item.status in [ORDER_STATUS.QUEUED]             # <<<<<<<<<<<<<<
@@ -11895,7 +12555,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
  */
         }
 
-        /* "QAOrder.pyx":672
+        /* "QAOrder.pyx":677
  *         try:
  *             return [
  *                 item for item in self.order_list.values()             # <<<<<<<<<<<<<<
@@ -11908,7 +12568,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
       __pyx_t_4 = 0;
       goto __pyx_L7_try_return;
 
-      /* "QAOrder.pyx":670
+      /* "QAOrder.pyx":675
  *     @property
  *     def untrade(self):
  *         try:             # <<<<<<<<<<<<<<
@@ -11923,7 +12583,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
     __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
 
-    /* "QAOrder.pyx":675
+    /* "QAOrder.pyx":680
  *                 if item.status in [ORDER_STATUS.QUEUED]
  *             ]
  *         except:             # <<<<<<<<<<<<<<
@@ -11932,12 +12592,12 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
  */
     /*except:*/ {
       __Pyx_AddTraceback("QAOrder.QA_OrderQueue.untrade.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_6, &__pyx_t_5) < 0) __PYX_ERR(0, 675, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_6, &__pyx_t_5) < 0) __PYX_ERR(0, 680, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GOTREF(__pyx_t_5);
 
-      /* "QAOrder.pyx":676
+      /* "QAOrder.pyx":681
  *             ]
  *         except:
  *             return []             # <<<<<<<<<<<<<<
@@ -11945,7 +12605,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
  *     # todo
  */
       __Pyx_XDECREF(__pyx_r);
-      __pyx_t_9 = PyList_New(0); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 676, __pyx_L5_except_error)
+      __pyx_t_9 = PyList_New(0); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 681, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_9);
       __pyx_r = __pyx_t_9;
       __pyx_t_9 = 0;
@@ -11956,7 +12616,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
     }
     __pyx_L5_except_error:;
 
-    /* "QAOrder.pyx":670
+    /* "QAOrder.pyx":675
  *     @property
  *     def untrade(self):
  *         try:             # <<<<<<<<<<<<<<
@@ -11982,7 +12642,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
     goto __pyx_L0;
   }
 
-  /* "QAOrder.pyx":669
+  /* "QAOrder.pyx":674
  * 
  *     @property
  *     def untrade(self):             # <<<<<<<<<<<<<<
@@ -12006,7 +12666,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_7untrade___get__(struct __pyx
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":680
+/* "QAOrder.pyx":685
  *     # todo
  * 
  *     def set_status(self, order_id, new_status):             # <<<<<<<<<<<<<<
@@ -12045,11 +12705,11 @@ static PyObject *__pyx_pw_7QAOrder_13QA_OrderQueue_13set_status(PyObject *__pyx_
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_new_status)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_status", 1, 2, 2, 1); __PYX_ERR(0, 680, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_status", 1, 2, 2, 1); __PYX_ERR(0, 685, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "set_status") < 0)) __PYX_ERR(0, 680, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "set_status") < 0)) __PYX_ERR(0, 685, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -12062,7 +12722,7 @@ static PyObject *__pyx_pw_7QAOrder_13QA_OrderQueue_13set_status(PyObject *__pyx_
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_status", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 680, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_status", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 685, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("QAOrder.QA_OrderQueue.set_status", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -12088,7 +12748,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_12set_status(struct __pyx_obj
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("set_status", 0);
 
-  /* "QAOrder.pyx":681
+  /* "QAOrder.pyx":686
  * 
  *     def set_status(self, order_id, new_status):
  *         try:             # <<<<<<<<<<<<<<
@@ -12104,21 +12764,21 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_12set_status(struct __pyx_obj
     __Pyx_XGOTREF(__pyx_t_3);
     /*try:*/ {
 
-      /* "QAOrder.pyx":682
+      /* "QAOrder.pyx":687
  *     def set_status(self, order_id, new_status):
  *         try:
  *             if order_id in self.order_ids:             # <<<<<<<<<<<<<<
  * 
  *                 self.order_list[order_id].status = new_status
  */
-      __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_order_ids); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 682, __pyx_L3_error)
+      __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_order_ids); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 687, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_5 = (__Pyx_PySequence_ContainsTF(__pyx_v_order_id, __pyx_t_4, Py_EQ)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 682, __pyx_L3_error)
+      __pyx_t_5 = (__Pyx_PySequence_ContainsTF(__pyx_v_order_id, __pyx_t_4, Py_EQ)); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 687, __pyx_L3_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       __pyx_t_6 = (__pyx_t_5 != 0);
       if (__pyx_t_6) {
 
-        /* "QAOrder.pyx":684
+        /* "QAOrder.pyx":689
  *             if order_id in self.order_ids:
  * 
  *                 self.order_list[order_id].status = new_status             # <<<<<<<<<<<<<<
@@ -12127,14 +12787,14 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_12set_status(struct __pyx_obj
  */
         if (unlikely(__pyx_v_self->order_list == Py_None)) {
           PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-          __PYX_ERR(0, 684, __pyx_L3_error)
+          __PYX_ERR(0, 689, __pyx_L3_error)
         }
-        __pyx_t_4 = __Pyx_PyDict_GetItem(__pyx_v_self->order_list, __pyx_v_order_id); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 684, __pyx_L3_error)
+        __pyx_t_4 = __Pyx_PyDict_GetItem(__pyx_v_self->order_list, __pyx_v_order_id); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 689, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_4);
-        if (__Pyx_PyObject_SetAttrStr(__pyx_t_4, __pyx_n_s_status_2, __pyx_v_new_status) < 0) __PYX_ERR(0, 684, __pyx_L3_error)
+        if (__Pyx_PyObject_SetAttrStr(__pyx_t_4, __pyx_n_s_status_2, __pyx_v_new_status) < 0) __PYX_ERR(0, 689, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-        /* "QAOrder.pyx":682
+        /* "QAOrder.pyx":687
  *     def set_status(self, order_id, new_status):
  *         try:
  *             if order_id in self.order_ids:             # <<<<<<<<<<<<<<
@@ -12144,7 +12804,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_12set_status(struct __pyx_obj
         goto __pyx_L9;
       }
 
-      /* "QAOrder.pyx":686
+      /* "QAOrder.pyx":691
  *                 self.order_list[order_id].status = new_status
  *             else:
  *                 pass             # <<<<<<<<<<<<<<
@@ -12155,7 +12815,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_12set_status(struct __pyx_obj
       }
       __pyx_L9:;
 
-      /* "QAOrder.pyx":681
+      /* "QAOrder.pyx":686
  * 
  *     def set_status(self, order_id, new_status):
  *         try:             # <<<<<<<<<<<<<<
@@ -12170,7 +12830,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_12set_status(struct __pyx_obj
     __pyx_L3_error:;
     __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-    /* "QAOrder.pyx":687
+    /* "QAOrder.pyx":692
  *             else:
  *                 pass
  *         except:             # <<<<<<<<<<<<<<
@@ -12179,12 +12839,12 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_12set_status(struct __pyx_obj
  */
     /*except:*/ {
       __Pyx_AddTraceback("QAOrder.QA_OrderQueue.set_status", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(0, 687, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(0, 692, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_GOTREF(__pyx_t_7);
       __Pyx_GOTREF(__pyx_t_8);
 
-      /* "QAOrder.pyx":688
+      /* "QAOrder.pyx":693
  *                 pass
  *         except:
  *             return None             # <<<<<<<<<<<<<<
@@ -12200,7 +12860,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_12set_status(struct __pyx_obj
     }
     __pyx_L5_except_error:;
 
-    /* "QAOrder.pyx":681
+    /* "QAOrder.pyx":686
  * 
  *     def set_status(self, order_id, new_status):
  *         try:             # <<<<<<<<<<<<<<
@@ -12221,7 +12881,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_12set_status(struct __pyx_obj
     __pyx_L8_try_end:;
   }
 
-  /* "QAOrder.pyx":680
+  /* "QAOrder.pyx":685
  *     # todo
  * 
  *     def set_status(self, order_id, new_status):             # <<<<<<<<<<<<<<
@@ -12244,7 +12904,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_12set_status(struct __pyx_obj
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":690
+/* "QAOrder.pyx":695
  *             return None
  * 
  *     def to_df(self):             # <<<<<<<<<<<<<<
@@ -12283,7 +12943,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_14to_df(struct __pyx_obj_7QAO
   PyObject *__pyx_t_12 = NULL;
   __Pyx_RefNannySetupContext("to_df", 0);
 
-  /* "QAOrder.pyx":691
+  /* "QAOrder.pyx":696
  * 
  *     def to_df(self):
  *         try:             # <<<<<<<<<<<<<<
@@ -12299,7 +12959,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_14to_df(struct __pyx_obj_7QAO
     __Pyx_XGOTREF(__pyx_t_3);
     /*try:*/ {
 
-      /* "QAOrder.pyx":692
+      /* "QAOrder.pyx":697
  *     def to_df(self):
  *         try:
  *             return pd.concat([x.to_df() for x in self.order_list.values()])             # <<<<<<<<<<<<<<
@@ -12307,26 +12967,26 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_14to_df(struct __pyx_obj_7QAO
  *             pass
  */
       __Pyx_XDECREF(__pyx_r);
-      __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_pd); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 692, __pyx_L3_error)
+      __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_pd); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 697, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_5);
-      __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_concat); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 692, __pyx_L3_error)
+      __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_concat); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 697, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-      __pyx_t_5 = PyList_New(0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 692, __pyx_L3_error)
+      __pyx_t_5 = PyList_New(0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 697, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_5);
       if (unlikely(__pyx_v_self->order_list == Py_None)) {
         PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "values");
-        __PYX_ERR(0, 692, __pyx_L3_error)
+        __PYX_ERR(0, 697, __pyx_L3_error)
       }
-      __pyx_t_7 = __Pyx_PyDict_Values(__pyx_v_self->order_list); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 692, __pyx_L3_error)
+      __pyx_t_7 = __Pyx_PyDict_Values(__pyx_v_self->order_list); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 697, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_7);
       if (likely(PyList_CheckExact(__pyx_t_7)) || PyTuple_CheckExact(__pyx_t_7)) {
         __pyx_t_8 = __pyx_t_7; __Pyx_INCREF(__pyx_t_8); __pyx_t_9 = 0;
         __pyx_t_10 = NULL;
       } else {
-        __pyx_t_9 = -1; __pyx_t_8 = PyObject_GetIter(__pyx_t_7); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 692, __pyx_L3_error)
+        __pyx_t_9 = -1; __pyx_t_8 = PyObject_GetIter(__pyx_t_7); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 697, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_8);
-        __pyx_t_10 = Py_TYPE(__pyx_t_8)->tp_iternext; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 692, __pyx_L3_error)
+        __pyx_t_10 = Py_TYPE(__pyx_t_8)->tp_iternext; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 697, __pyx_L3_error)
       }
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
       for (;;) {
@@ -12334,17 +12994,17 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_14to_df(struct __pyx_obj_7QAO
           if (likely(PyList_CheckExact(__pyx_t_8))) {
             if (__pyx_t_9 >= PyList_GET_SIZE(__pyx_t_8)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_7 = PyList_GET_ITEM(__pyx_t_8, __pyx_t_9); __Pyx_INCREF(__pyx_t_7); __pyx_t_9++; if (unlikely(0 < 0)) __PYX_ERR(0, 692, __pyx_L3_error)
+            __pyx_t_7 = PyList_GET_ITEM(__pyx_t_8, __pyx_t_9); __Pyx_INCREF(__pyx_t_7); __pyx_t_9++; if (unlikely(0 < 0)) __PYX_ERR(0, 697, __pyx_L3_error)
             #else
-            __pyx_t_7 = PySequence_ITEM(__pyx_t_8, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 692, __pyx_L3_error)
+            __pyx_t_7 = PySequence_ITEM(__pyx_t_8, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 697, __pyx_L3_error)
             __Pyx_GOTREF(__pyx_t_7);
             #endif
           } else {
             if (__pyx_t_9 >= PyTuple_GET_SIZE(__pyx_t_8)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_8, __pyx_t_9); __Pyx_INCREF(__pyx_t_7); __pyx_t_9++; if (unlikely(0 < 0)) __PYX_ERR(0, 692, __pyx_L3_error)
+            __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_8, __pyx_t_9); __Pyx_INCREF(__pyx_t_7); __pyx_t_9++; if (unlikely(0 < 0)) __PYX_ERR(0, 697, __pyx_L3_error)
             #else
-            __pyx_t_7 = PySequence_ITEM(__pyx_t_8, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 692, __pyx_L3_error)
+            __pyx_t_7 = PySequence_ITEM(__pyx_t_8, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 697, __pyx_L3_error)
             __Pyx_GOTREF(__pyx_t_7);
             #endif
           }
@@ -12354,7 +13014,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_14to_df(struct __pyx_obj_7QAO
             PyObject* exc_type = PyErr_Occurred();
             if (exc_type) {
               if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-              else __PYX_ERR(0, 692, __pyx_L3_error)
+              else __PYX_ERR(0, 697, __pyx_L3_error)
             }
             break;
           }
@@ -12362,7 +13022,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_14to_df(struct __pyx_obj_7QAO
         }
         __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_7);
         __pyx_t_7 = 0;
-        __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_v_x, __pyx_n_s_to_df); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 692, __pyx_L3_error)
+        __pyx_t_11 = __Pyx_PyObject_GetAttrStr(__pyx_v_x, __pyx_n_s_to_df); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 697, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_11);
         __pyx_t_12 = NULL;
         if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_11))) {
@@ -12376,10 +13036,10 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_14to_df(struct __pyx_obj_7QAO
         }
         __pyx_t_7 = (__pyx_t_12) ? __Pyx_PyObject_CallOneArg(__pyx_t_11, __pyx_t_12) : __Pyx_PyObject_CallNoArg(__pyx_t_11);
         __Pyx_XDECREF(__pyx_t_12); __pyx_t_12 = 0;
-        if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 692, __pyx_L3_error)
+        if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 697, __pyx_L3_error)
         __Pyx_GOTREF(__pyx_t_7);
         __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
-        if (unlikely(__Pyx_ListComp_Append(__pyx_t_5, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 692, __pyx_L3_error)
+        if (unlikely(__Pyx_ListComp_Append(__pyx_t_5, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 697, __pyx_L3_error)
         __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
       }
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
@@ -12396,14 +13056,14 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_14to_df(struct __pyx_obj_7QAO
       __pyx_t_4 = (__pyx_t_8) ? __Pyx_PyObject_Call2Args(__pyx_t_6, __pyx_t_8, __pyx_t_5) : __Pyx_PyObject_CallOneArg(__pyx_t_6, __pyx_t_5);
       __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-      if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 692, __pyx_L3_error)
+      if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 697, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
       __pyx_r = __pyx_t_4;
       __pyx_t_4 = 0;
       goto __pyx_L7_try_return;
 
-      /* "QAOrder.pyx":691
+      /* "QAOrder.pyx":696
  * 
  *     def to_df(self):
  *         try:             # <<<<<<<<<<<<<<
@@ -12420,7 +13080,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_14to_df(struct __pyx_obj_7QAO
     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
 
-    /* "QAOrder.pyx":693
+    /* "QAOrder.pyx":698
  *         try:
  *             return pd.concat([x.to_df() for x in self.order_list.values()])
  *         except:             # <<<<<<<<<<<<<<
@@ -12433,7 +13093,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_14to_df(struct __pyx_obj_7QAO
     }
     __pyx_L7_try_return:;
 
-    /* "QAOrder.pyx":691
+    /* "QAOrder.pyx":696
  * 
  *     def to_df(self):
  *         try:             # <<<<<<<<<<<<<<
@@ -12452,7 +13112,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_14to_df(struct __pyx_obj_7QAO
     __Pyx_ExceptionReset(__pyx_t_1, __pyx_t_2, __pyx_t_3);
   }
 
-  /* "QAOrder.pyx":690
+  /* "QAOrder.pyx":695
  *             return None
  * 
  *     def to_df(self):             # <<<<<<<<<<<<<<
@@ -12469,7 +13129,7 @@ static PyObject *__pyx_pf_7QAOrder_13QA_OrderQueue_14to_df(struct __pyx_obj_7QAO
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":562
+/* "QAOrder.pyx":567
  *      orderqueuedataframe
  *     """
  *     cdef public dict order_list             # <<<<<<<<<<<<<<
@@ -12524,7 +13184,7 @@ static int __pyx_pf_7QAOrder_13QA_OrderQueue_10order_list_2__set__(struct __pyx_
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__set__", 0);
-  if (!(likely(PyDict_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "dict", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 562, __pyx_L1_error)
+  if (!(likely(PyDict_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "dict", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 567, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -12574,7 +13234,7 @@ static int __pyx_pf_7QAOrder_13QA_OrderQueue_10order_list_4__del__(struct __pyx_
   return __pyx_r;
 }
 
-/* "QAOrder.pyx":563
+/* "QAOrder.pyx":568
  *     """
  *     cdef public dict order_list
  *     cdef public dict deal_list             # <<<<<<<<<<<<<<
@@ -12629,7 +13289,7 @@ static int __pyx_pf_7QAOrder_13QA_OrderQueue_9deal_list_2__set__(struct __pyx_ob
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__set__", 0);
-  if (!(likely(PyDict_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "dict", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 563, __pyx_L1_error)
+  if (!(likely(PyDict_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "dict", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 568, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -13075,18 +13735,18 @@ static PyObject *__pyx_pf_7QAOrder___pyx_unpickle_QA_Order(CYTHON_UNUSED PyObjec
   /* "(tree fragment)":4
  *     cdef object __pyx_PickleError
  *     cdef object __pyx_result
- *     if __pyx_checksum != 0x43fad51:             # <<<<<<<<<<<<<<
+ *     if __pyx_checksum != 0x886f3b4:             # <<<<<<<<<<<<<<
  *         from pickle import PickleError as __pyx_PickleError
- *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x43fad51 = (_status, account_cookie, amount, amount_model, broker, callback, code, commission_coeff, date, datetime, exchange_id, frequence, market_type, money, order_id, order_model, price, sending_time, strategy, tax_coeff, towards, trade_id, trade_time, user))" % __pyx_checksum)
+ *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x886f3b4 = (_status, account_cookie, amount, amount_model, broker, callback, cancel_amount, code, commission_coeff, date, datetime, exchange_code, exchange_id, frequence, market_type, money, order_id, order_model, price, realorder_id, reason, sending_time, strategy, tax_coeff, time_condition, towards, trade_amount, trade_id, trade_price, trade_time, user_cookie))" % __pyx_checksum)
  */
-  __pyx_t_1 = ((__pyx_v___pyx_checksum != 0x43fad51) != 0);
+  __pyx_t_1 = ((__pyx_v___pyx_checksum != 0x886f3b4) != 0);
   if (__pyx_t_1) {
 
     /* "(tree fragment)":5
  *     cdef object __pyx_result
- *     if __pyx_checksum != 0x43fad51:
+ *     if __pyx_checksum != 0x886f3b4:
  *         from pickle import PickleError as __pyx_PickleError             # <<<<<<<<<<<<<<
- *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x43fad51 = (_status, account_cookie, amount, amount_model, broker, callback, code, commission_coeff, date, datetime, exchange_id, frequence, market_type, money, order_id, order_model, price, sending_time, strategy, tax_coeff, towards, trade_id, trade_time, user))" % __pyx_checksum)
+ *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x886f3b4 = (_status, account_cookie, amount, amount_model, broker, callback, cancel_amount, code, commission_coeff, date, datetime, exchange_code, exchange_id, frequence, market_type, money, order_id, order_model, price, realorder_id, reason, sending_time, strategy, tax_coeff, time_condition, towards, trade_amount, trade_id, trade_price, trade_time, user_cookie))" % __pyx_checksum)
  *     __pyx_result = QA_Order.__new__(__pyx_type)
  */
     __pyx_t_2 = PyList_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 5, __pyx_L1_error)
@@ -13105,15 +13765,15 @@ static PyObject *__pyx_pf_7QAOrder___pyx_unpickle_QA_Order(CYTHON_UNUSED PyObjec
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
     /* "(tree fragment)":6
- *     if __pyx_checksum != 0x43fad51:
+ *     if __pyx_checksum != 0x886f3b4:
  *         from pickle import PickleError as __pyx_PickleError
- *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x43fad51 = (_status, account_cookie, amount, amount_model, broker, callback, code, commission_coeff, date, datetime, exchange_id, frequence, market_type, money, order_id, order_model, price, sending_time, strategy, tax_coeff, towards, trade_id, trade_time, user))" % __pyx_checksum)             # <<<<<<<<<<<<<<
+ *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x886f3b4 = (_status, account_cookie, amount, amount_model, broker, callback, cancel_amount, code, commission_coeff, date, datetime, exchange_code, exchange_id, frequence, market_type, money, order_id, order_model, price, realorder_id, reason, sending_time, strategy, tax_coeff, time_condition, towards, trade_amount, trade_id, trade_price, trade_time, user_cookie))" % __pyx_checksum)             # <<<<<<<<<<<<<<
  *     __pyx_result = QA_Order.__new__(__pyx_type)
  *     if __pyx_state is not None:
  */
     __pyx_t_2 = __Pyx_PyInt_From_long(__pyx_v___pyx_checksum); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 6, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_4 = __Pyx_PyString_Format(__pyx_kp_s_Incompatible_checksums_s_vs_0x43, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 6, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyString_Format(__pyx_kp_s_Incompatible_checksums_s_vs_0x88, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 6, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_INCREF(__pyx_v___pyx_PickleError);
@@ -13140,15 +13800,15 @@ static PyObject *__pyx_pf_7QAOrder___pyx_unpickle_QA_Order(CYTHON_UNUSED PyObjec
     /* "(tree fragment)":4
  *     cdef object __pyx_PickleError
  *     cdef object __pyx_result
- *     if __pyx_checksum != 0x43fad51:             # <<<<<<<<<<<<<<
+ *     if __pyx_checksum != 0x886f3b4:             # <<<<<<<<<<<<<<
  *         from pickle import PickleError as __pyx_PickleError
- *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x43fad51 = (_status, account_cookie, amount, amount_model, broker, callback, code, commission_coeff, date, datetime, exchange_id, frequence, market_type, money, order_id, order_model, price, sending_time, strategy, tax_coeff, towards, trade_id, trade_time, user))" % __pyx_checksum)
+ *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x886f3b4 = (_status, account_cookie, amount, amount_model, broker, callback, cancel_amount, code, commission_coeff, date, datetime, exchange_code, exchange_id, frequence, market_type, money, order_id, order_model, price, realorder_id, reason, sending_time, strategy, tax_coeff, time_condition, towards, trade_amount, trade_id, trade_price, trade_time, user_cookie))" % __pyx_checksum)
  */
   }
 
   /* "(tree fragment)":7
  *         from pickle import PickleError as __pyx_PickleError
- *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x43fad51 = (_status, account_cookie, amount, amount_model, broker, callback, code, commission_coeff, date, datetime, exchange_id, frequence, market_type, money, order_id, order_model, price, sending_time, strategy, tax_coeff, towards, trade_id, trade_time, user))" % __pyx_checksum)
+ *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x886f3b4 = (_status, account_cookie, amount, amount_model, broker, callback, cancel_amount, code, commission_coeff, date, datetime, exchange_code, exchange_id, frequence, market_type, money, order_id, order_model, price, realorder_id, reason, sending_time, strategy, tax_coeff, time_condition, towards, trade_amount, trade_id, trade_price, trade_time, user_cookie))" % __pyx_checksum)
  *     __pyx_result = QA_Order.__new__(__pyx_type)             # <<<<<<<<<<<<<<
  *     if __pyx_state is not None:
  *         __pyx_unpickle_QA_Order__set_state(<QA_Order> __pyx_result, __pyx_state)
@@ -13174,7 +13834,7 @@ static PyObject *__pyx_pf_7QAOrder___pyx_unpickle_QA_Order(CYTHON_UNUSED PyObjec
   __pyx_t_3 = 0;
 
   /* "(tree fragment)":8
- *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x43fad51 = (_status, account_cookie, amount, amount_model, broker, callback, code, commission_coeff, date, datetime, exchange_id, frequence, market_type, money, order_id, order_model, price, sending_time, strategy, tax_coeff, towards, trade_id, trade_time, user))" % __pyx_checksum)
+ *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x886f3b4 = (_status, account_cookie, amount, amount_model, broker, callback, cancel_amount, code, commission_coeff, date, datetime, exchange_code, exchange_id, frequence, market_type, money, order_id, order_model, price, realorder_id, reason, sending_time, strategy, tax_coeff, time_condition, towards, trade_amount, trade_id, trade_price, trade_time, user_cookie))" % __pyx_checksum)
  *     __pyx_result = QA_Order.__new__(__pyx_type)
  *     if __pyx_state is not None:             # <<<<<<<<<<<<<<
  *         __pyx_unpickle_QA_Order__set_state(<QA_Order> __pyx_result, __pyx_state)
@@ -13197,7 +13857,7 @@ static PyObject *__pyx_pf_7QAOrder___pyx_unpickle_QA_Order(CYTHON_UNUSED PyObjec
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
     /* "(tree fragment)":8
- *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x43fad51 = (_status, account_cookie, amount, amount_model, broker, callback, code, commission_coeff, date, datetime, exchange_id, frequence, market_type, money, order_id, order_model, price, sending_time, strategy, tax_coeff, towards, trade_id, trade_time, user))" % __pyx_checksum)
+ *         raise __pyx_PickleError("Incompatible checksums (%s vs 0x886f3b4 = (_status, account_cookie, amount, amount_model, broker, callback, cancel_amount, code, commission_coeff, date, datetime, exchange_code, exchange_id, frequence, market_type, money, order_id, order_model, price, realorder_id, reason, sending_time, strategy, tax_coeff, time_condition, towards, trade_amount, trade_id, trade_price, trade_time, user_cookie))" % __pyx_checksum)
  *     __pyx_result = QA_Order.__new__(__pyx_type)
  *     if __pyx_state is not None:             # <<<<<<<<<<<<<<
  *         __pyx_unpickle_QA_Order__set_state(<QA_Order> __pyx_result, __pyx_state)
@@ -13210,7 +13870,7 @@ static PyObject *__pyx_pf_7QAOrder___pyx_unpickle_QA_Order(CYTHON_UNUSED PyObjec
  *         __pyx_unpickle_QA_Order__set_state(<QA_Order> __pyx_result, __pyx_state)
  *     return __pyx_result             # <<<<<<<<<<<<<<
  * cdef __pyx_unpickle_QA_Order__set_state(QA_Order __pyx_result, tuple __pyx_state):
- *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.code = __pyx_state[6]; __pyx_result.commission_coeff = __pyx_state[7]; __pyx_result.date = __pyx_state[8]; __pyx_result.datetime = __pyx_state[9]; __pyx_result.exchange_id = __pyx_state[10]; __pyx_result.frequence = __pyx_state[11]; __pyx_result.market_type = __pyx_state[12]; __pyx_result.money = __pyx_state[13]; __pyx_result.order_id = __pyx_state[14]; __pyx_result.order_model = __pyx_state[15]; __pyx_result.price = __pyx_state[16]; __pyx_result.sending_time = __pyx_state[17]; __pyx_result.strategy = __pyx_state[18]; __pyx_result.tax_coeff = __pyx_state[19]; __pyx_result.towards = __pyx_state[20]; __pyx_result.trade_id = __pyx_state[21]; __pyx_result.trade_time = __pyx_state[22]; __pyx_result.user = __pyx_state[23]
+ *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.cancel_amount = __pyx_state[6]; __pyx_result.code = __pyx_state[7]; __pyx_result.commission_coeff = __pyx_state[8]; __pyx_result.date = __pyx_state[9]; __pyx_result.datetime = __pyx_state[10]; __pyx_result.exchange_code = __pyx_state[11]; __pyx_result.exchange_id = __pyx_state[12]; __pyx_result.frequence = __pyx_state[13]; __pyx_result.market_type = __pyx_state[14]; __pyx_result.money = __pyx_state[15]; __pyx_result.order_id = __pyx_state[16]; __pyx_result.order_model = __pyx_state[17]; __pyx_result.price = __pyx_state[18]; __pyx_result.realorder_id = __pyx_state[19]; __pyx_result.reason = __pyx_state[20]; __pyx_result.sending_time = __pyx_state[21]; __pyx_result.strategy = __pyx_state[22]; __pyx_result.tax_coeff = __pyx_state[23]; __pyx_result.time_condition = __pyx_state[24]; __pyx_result.towards = __pyx_state[25]; __pyx_result.trade_amount = __pyx_state[26]; __pyx_result.trade_id = __pyx_state[27]; __pyx_result.trade_price = __pyx_state[28]; __pyx_result.trade_time = __pyx_state[29]; __pyx_result.user_cookie = __pyx_state[30]
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF(__pyx_v___pyx_result);
@@ -13243,8 +13903,8 @@ static PyObject *__pyx_pf_7QAOrder___pyx_unpickle_QA_Order(CYTHON_UNUSED PyObjec
  *         __pyx_unpickle_QA_Order__set_state(<QA_Order> __pyx_result, __pyx_state)
  *     return __pyx_result
  * cdef __pyx_unpickle_QA_Order__set_state(QA_Order __pyx_result, tuple __pyx_state):             # <<<<<<<<<<<<<<
- *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.code = __pyx_state[6]; __pyx_result.commission_coeff = __pyx_state[7]; __pyx_result.date = __pyx_state[8]; __pyx_result.datetime = __pyx_state[9]; __pyx_result.exchange_id = __pyx_state[10]; __pyx_result.frequence = __pyx_state[11]; __pyx_result.market_type = __pyx_state[12]; __pyx_result.money = __pyx_state[13]; __pyx_result.order_id = __pyx_state[14]; __pyx_result.order_model = __pyx_state[15]; __pyx_result.price = __pyx_state[16]; __pyx_result.sending_time = __pyx_state[17]; __pyx_result.strategy = __pyx_state[18]; __pyx_result.tax_coeff = __pyx_state[19]; __pyx_result.towards = __pyx_state[20]; __pyx_result.trade_id = __pyx_state[21]; __pyx_result.trade_time = __pyx_state[22]; __pyx_result.user = __pyx_state[23]
- *     if len(__pyx_state) > 24 and hasattr(__pyx_result, '__dict__'):
+ *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.cancel_amount = __pyx_state[6]; __pyx_result.code = __pyx_state[7]; __pyx_result.commission_coeff = __pyx_state[8]; __pyx_result.date = __pyx_state[9]; __pyx_result.datetime = __pyx_state[10]; __pyx_result.exchange_code = __pyx_state[11]; __pyx_result.exchange_id = __pyx_state[12]; __pyx_result.frequence = __pyx_state[13]; __pyx_result.market_type = __pyx_state[14]; __pyx_result.money = __pyx_state[15]; __pyx_result.order_id = __pyx_state[16]; __pyx_result.order_model = __pyx_state[17]; __pyx_result.price = __pyx_state[18]; __pyx_result.realorder_id = __pyx_state[19]; __pyx_result.reason = __pyx_state[20]; __pyx_result.sending_time = __pyx_state[21]; __pyx_result.strategy = __pyx_state[22]; __pyx_result.tax_coeff = __pyx_state[23]; __pyx_result.time_condition = __pyx_state[24]; __pyx_result.towards = __pyx_state[25]; __pyx_result.trade_amount = __pyx_state[26]; __pyx_result.trade_id = __pyx_state[27]; __pyx_result.trade_price = __pyx_state[28]; __pyx_result.trade_time = __pyx_state[29]; __pyx_result.user_cookie = __pyx_state[30]
+ *     if len(__pyx_state) > 31 and hasattr(__pyx_result, '__dict__'):
  */
 
 static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __pyx_obj_7QAOrder_QA_Order *__pyx_v___pyx_result, PyObject *__pyx_v___pyx_state) {
@@ -13265,9 +13925,9 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
   /* "(tree fragment)":12
  *     return __pyx_result
  * cdef __pyx_unpickle_QA_Order__set_state(QA_Order __pyx_result, tuple __pyx_state):
- *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.code = __pyx_state[6]; __pyx_result.commission_coeff = __pyx_state[7]; __pyx_result.date = __pyx_state[8]; __pyx_result.datetime = __pyx_state[9]; __pyx_result.exchange_id = __pyx_state[10]; __pyx_result.frequence = __pyx_state[11]; __pyx_result.market_type = __pyx_state[12]; __pyx_result.money = __pyx_state[13]; __pyx_result.order_id = __pyx_state[14]; __pyx_result.order_model = __pyx_state[15]; __pyx_result.price = __pyx_state[16]; __pyx_result.sending_time = __pyx_state[17]; __pyx_result.strategy = __pyx_state[18]; __pyx_result.tax_coeff = __pyx_state[19]; __pyx_result.towards = __pyx_state[20]; __pyx_result.trade_id = __pyx_state[21]; __pyx_result.trade_time = __pyx_state[22]; __pyx_result.user = __pyx_state[23]             # <<<<<<<<<<<<<<
- *     if len(__pyx_state) > 24 and hasattr(__pyx_result, '__dict__'):
- *         __pyx_result.__dict__.update(__pyx_state[24])
+ *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.cancel_amount = __pyx_state[6]; __pyx_result.code = __pyx_state[7]; __pyx_result.commission_coeff = __pyx_state[8]; __pyx_result.date = __pyx_state[9]; __pyx_result.datetime = __pyx_state[10]; __pyx_result.exchange_code = __pyx_state[11]; __pyx_result.exchange_id = __pyx_state[12]; __pyx_result.frequence = __pyx_state[13]; __pyx_result.market_type = __pyx_state[14]; __pyx_result.money = __pyx_state[15]; __pyx_result.order_id = __pyx_state[16]; __pyx_result.order_model = __pyx_state[17]; __pyx_result.price = __pyx_state[18]; __pyx_result.realorder_id = __pyx_state[19]; __pyx_result.reason = __pyx_state[20]; __pyx_result.sending_time = __pyx_state[21]; __pyx_result.strategy = __pyx_state[22]; __pyx_result.tax_coeff = __pyx_state[23]; __pyx_result.time_condition = __pyx_state[24]; __pyx_result.towards = __pyx_state[25]; __pyx_result.trade_amount = __pyx_state[26]; __pyx_result.trade_id = __pyx_state[27]; __pyx_result.trade_price = __pyx_state[28]; __pyx_result.trade_time = __pyx_state[29]; __pyx_result.user_cookie = __pyx_state[30]             # <<<<<<<<<<<<<<
+ *     if len(__pyx_state) > 31 and hasattr(__pyx_result, '__dict__'):
+ *         __pyx_result.__dict__.update(__pyx_state[31])
  */
   if (unlikely(__pyx_v___pyx_state == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
@@ -13343,6 +14003,15 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
   }
   __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 6, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v___pyx_result->cancel_amount = __pyx_t_2;
+  if (unlikely(__pyx_v___pyx_state == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+    __PYX_ERR(1, 12, __pyx_L1_error)
+  }
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 7, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
   if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v___pyx_result->code);
@@ -13353,7 +14022,7 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 7, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 8, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -13362,7 +14031,7 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 8, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 9, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
@@ -13374,7 +14043,7 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 9, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 10, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
@@ -13386,7 +14055,19 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 10, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 11, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (!(likely(PyDict_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "dict", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF(__pyx_v___pyx_result->exchange_code);
+  __Pyx_DECREF(__pyx_v___pyx_result->exchange_code);
+  __pyx_v___pyx_result->exchange_code = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+  if (unlikely(__pyx_v___pyx_state == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+    __PYX_ERR(1, 12, __pyx_L1_error)
+  }
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 12, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
@@ -13398,7 +14079,7 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 11, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 13, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
@@ -13410,7 +14091,7 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 12, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 14, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
@@ -13422,7 +14103,7 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 13, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 15, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -13431,7 +14112,7 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 14, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 16, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
@@ -13443,7 +14124,7 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 15, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 17, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
@@ -13455,7 +14136,7 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 16, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 18, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -13464,7 +14145,31 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 17, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 19, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF(__pyx_v___pyx_result->realorder_id);
+  __Pyx_DECREF(__pyx_v___pyx_result->realorder_id);
+  __pyx_v___pyx_result->realorder_id = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+  if (unlikely(__pyx_v___pyx_state == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+    __PYX_ERR(1, 12, __pyx_L1_error)
+  }
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 20, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF(__pyx_v___pyx_result->reason);
+  __Pyx_DECREF(__pyx_v___pyx_result->reason);
+  __pyx_v___pyx_result->reason = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+  if (unlikely(__pyx_v___pyx_state == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+    __PYX_ERR(1, 12, __pyx_L1_error)
+  }
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 21, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
@@ -13476,7 +14181,7 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 18, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 22, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
@@ -13488,7 +14193,7 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 19, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 23, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -13497,7 +14202,19 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 20, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 24, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF(__pyx_v___pyx_result->time_condition);
+  __Pyx_DECREF(__pyx_v___pyx_result->time_condition);
+  __pyx_v___pyx_result->time_condition = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+  if (unlikely(__pyx_v___pyx_state == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+    __PYX_ERR(1, 12, __pyx_L1_error)
+  }
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 25, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_t_1); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -13506,7 +14223,16 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 21, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 26, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v___pyx_result->trade_amount = __pyx_t_2;
+  if (unlikely(__pyx_v___pyx_state == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+    __PYX_ERR(1, 12, __pyx_L1_error)
+  }
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 27, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (!(likely(PyList_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
@@ -13518,7 +14244,16 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 22, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 28, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(1, 12, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v___pyx_result->trade_price = __pyx_t_2;
+  if (unlikely(__pyx_v___pyx_state == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+    __PYX_ERR(1, 12, __pyx_L1_error)
+  }
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 29, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (!(likely(PyList_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
@@ -13530,27 +14265,27 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
     __PYX_ERR(1, 12, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 23, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 30, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (!(likely(PyString_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "str", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(1, 12, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
-  __Pyx_GOTREF(__pyx_v___pyx_result->user);
-  __Pyx_DECREF(__pyx_v___pyx_result->user);
-  __pyx_v___pyx_result->user = ((PyObject*)__pyx_t_1);
+  __Pyx_GOTREF(__pyx_v___pyx_result->user_cookie);
+  __Pyx_DECREF(__pyx_v___pyx_result->user_cookie);
+  __pyx_v___pyx_result->user_cookie = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
   /* "(tree fragment)":13
  * cdef __pyx_unpickle_QA_Order__set_state(QA_Order __pyx_result, tuple __pyx_state):
- *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.code = __pyx_state[6]; __pyx_result.commission_coeff = __pyx_state[7]; __pyx_result.date = __pyx_state[8]; __pyx_result.datetime = __pyx_state[9]; __pyx_result.exchange_id = __pyx_state[10]; __pyx_result.frequence = __pyx_state[11]; __pyx_result.market_type = __pyx_state[12]; __pyx_result.money = __pyx_state[13]; __pyx_result.order_id = __pyx_state[14]; __pyx_result.order_model = __pyx_state[15]; __pyx_result.price = __pyx_state[16]; __pyx_result.sending_time = __pyx_state[17]; __pyx_result.strategy = __pyx_state[18]; __pyx_result.tax_coeff = __pyx_state[19]; __pyx_result.towards = __pyx_state[20]; __pyx_result.trade_id = __pyx_state[21]; __pyx_result.trade_time = __pyx_state[22]; __pyx_result.user = __pyx_state[23]
- *     if len(__pyx_state) > 24 and hasattr(__pyx_result, '__dict__'):             # <<<<<<<<<<<<<<
- *         __pyx_result.__dict__.update(__pyx_state[24])
+ *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.cancel_amount = __pyx_state[6]; __pyx_result.code = __pyx_state[7]; __pyx_result.commission_coeff = __pyx_state[8]; __pyx_result.date = __pyx_state[9]; __pyx_result.datetime = __pyx_state[10]; __pyx_result.exchange_code = __pyx_state[11]; __pyx_result.exchange_id = __pyx_state[12]; __pyx_result.frequence = __pyx_state[13]; __pyx_result.market_type = __pyx_state[14]; __pyx_result.money = __pyx_state[15]; __pyx_result.order_id = __pyx_state[16]; __pyx_result.order_model = __pyx_state[17]; __pyx_result.price = __pyx_state[18]; __pyx_result.realorder_id = __pyx_state[19]; __pyx_result.reason = __pyx_state[20]; __pyx_result.sending_time = __pyx_state[21]; __pyx_result.strategy = __pyx_state[22]; __pyx_result.tax_coeff = __pyx_state[23]; __pyx_result.time_condition = __pyx_state[24]; __pyx_result.towards = __pyx_state[25]; __pyx_result.trade_amount = __pyx_state[26]; __pyx_result.trade_id = __pyx_state[27]; __pyx_result.trade_price = __pyx_state[28]; __pyx_result.trade_time = __pyx_state[29]; __pyx_result.user_cookie = __pyx_state[30]
+ *     if len(__pyx_state) > 31 and hasattr(__pyx_result, '__dict__'):             # <<<<<<<<<<<<<<
+ *         __pyx_result.__dict__.update(__pyx_state[31])
  */
   if (unlikely(__pyx_v___pyx_state == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "object of type 'NoneType' has no len()");
     __PYX_ERR(1, 13, __pyx_L1_error)
   }
   __pyx_t_5 = PyTuple_GET_SIZE(__pyx_v___pyx_state); if (unlikely(__pyx_t_5 == ((Py_ssize_t)-1))) __PYX_ERR(1, 13, __pyx_L1_error)
-  __pyx_t_6 = ((__pyx_t_5 > 24) != 0);
+  __pyx_t_6 = ((__pyx_t_5 > 31) != 0);
   if (__pyx_t_6) {
   } else {
     __pyx_t_4 = __pyx_t_6;
@@ -13563,9 +14298,9 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
   if (__pyx_t_4) {
 
     /* "(tree fragment)":14
- *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.code = __pyx_state[6]; __pyx_result.commission_coeff = __pyx_state[7]; __pyx_result.date = __pyx_state[8]; __pyx_result.datetime = __pyx_state[9]; __pyx_result.exchange_id = __pyx_state[10]; __pyx_result.frequence = __pyx_state[11]; __pyx_result.market_type = __pyx_state[12]; __pyx_result.money = __pyx_state[13]; __pyx_result.order_id = __pyx_state[14]; __pyx_result.order_model = __pyx_state[15]; __pyx_result.price = __pyx_state[16]; __pyx_result.sending_time = __pyx_state[17]; __pyx_result.strategy = __pyx_state[18]; __pyx_result.tax_coeff = __pyx_state[19]; __pyx_result.towards = __pyx_state[20]; __pyx_result.trade_id = __pyx_state[21]; __pyx_result.trade_time = __pyx_state[22]; __pyx_result.user = __pyx_state[23]
- *     if len(__pyx_state) > 24 and hasattr(__pyx_result, '__dict__'):
- *         __pyx_result.__dict__.update(__pyx_state[24])             # <<<<<<<<<<<<<<
+ *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.cancel_amount = __pyx_state[6]; __pyx_result.code = __pyx_state[7]; __pyx_result.commission_coeff = __pyx_state[8]; __pyx_result.date = __pyx_state[9]; __pyx_result.datetime = __pyx_state[10]; __pyx_result.exchange_code = __pyx_state[11]; __pyx_result.exchange_id = __pyx_state[12]; __pyx_result.frequence = __pyx_state[13]; __pyx_result.market_type = __pyx_state[14]; __pyx_result.money = __pyx_state[15]; __pyx_result.order_id = __pyx_state[16]; __pyx_result.order_model = __pyx_state[17]; __pyx_result.price = __pyx_state[18]; __pyx_result.realorder_id = __pyx_state[19]; __pyx_result.reason = __pyx_state[20]; __pyx_result.sending_time = __pyx_state[21]; __pyx_result.strategy = __pyx_state[22]; __pyx_result.tax_coeff = __pyx_state[23]; __pyx_result.time_condition = __pyx_state[24]; __pyx_result.towards = __pyx_state[25]; __pyx_result.trade_amount = __pyx_state[26]; __pyx_result.trade_id = __pyx_state[27]; __pyx_result.trade_price = __pyx_state[28]; __pyx_result.trade_time = __pyx_state[29]; __pyx_result.user_cookie = __pyx_state[30]
+ *     if len(__pyx_state) > 31 and hasattr(__pyx_result, '__dict__'):
+ *         __pyx_result.__dict__.update(__pyx_state[31])             # <<<<<<<<<<<<<<
  */
     __pyx_t_8 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v___pyx_result), __pyx_n_s_dict); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 14, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
@@ -13576,7 +14311,7 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
       __PYX_ERR(1, 14, __pyx_L1_error)
     }
-    __pyx_t_8 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 24, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 14, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_GetItemInt_Tuple(__pyx_v___pyx_state, 31, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 14, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
     __pyx_t_10 = NULL;
     if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_9))) {
@@ -13598,9 +14333,9 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
 
     /* "(tree fragment)":13
  * cdef __pyx_unpickle_QA_Order__set_state(QA_Order __pyx_result, tuple __pyx_state):
- *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.code = __pyx_state[6]; __pyx_result.commission_coeff = __pyx_state[7]; __pyx_result.date = __pyx_state[8]; __pyx_result.datetime = __pyx_state[9]; __pyx_result.exchange_id = __pyx_state[10]; __pyx_result.frequence = __pyx_state[11]; __pyx_result.market_type = __pyx_state[12]; __pyx_result.money = __pyx_state[13]; __pyx_result.order_id = __pyx_state[14]; __pyx_result.order_model = __pyx_state[15]; __pyx_result.price = __pyx_state[16]; __pyx_result.sending_time = __pyx_state[17]; __pyx_result.strategy = __pyx_state[18]; __pyx_result.tax_coeff = __pyx_state[19]; __pyx_result.towards = __pyx_state[20]; __pyx_result.trade_id = __pyx_state[21]; __pyx_result.trade_time = __pyx_state[22]; __pyx_result.user = __pyx_state[23]
- *     if len(__pyx_state) > 24 and hasattr(__pyx_result, '__dict__'):             # <<<<<<<<<<<<<<
- *         __pyx_result.__dict__.update(__pyx_state[24])
+ *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.cancel_amount = __pyx_state[6]; __pyx_result.code = __pyx_state[7]; __pyx_result.commission_coeff = __pyx_state[8]; __pyx_result.date = __pyx_state[9]; __pyx_result.datetime = __pyx_state[10]; __pyx_result.exchange_code = __pyx_state[11]; __pyx_result.exchange_id = __pyx_state[12]; __pyx_result.frequence = __pyx_state[13]; __pyx_result.market_type = __pyx_state[14]; __pyx_result.money = __pyx_state[15]; __pyx_result.order_id = __pyx_state[16]; __pyx_result.order_model = __pyx_state[17]; __pyx_result.price = __pyx_state[18]; __pyx_result.realorder_id = __pyx_state[19]; __pyx_result.reason = __pyx_state[20]; __pyx_result.sending_time = __pyx_state[21]; __pyx_result.strategy = __pyx_state[22]; __pyx_result.tax_coeff = __pyx_state[23]; __pyx_result.time_condition = __pyx_state[24]; __pyx_result.towards = __pyx_state[25]; __pyx_result.trade_amount = __pyx_state[26]; __pyx_result.trade_id = __pyx_state[27]; __pyx_result.trade_price = __pyx_state[28]; __pyx_result.trade_time = __pyx_state[29]; __pyx_result.user_cookie = __pyx_state[30]
+ *     if len(__pyx_state) > 31 and hasattr(__pyx_result, '__dict__'):             # <<<<<<<<<<<<<<
+ *         __pyx_result.__dict__.update(__pyx_state[31])
  */
   }
 
@@ -13608,8 +14343,8 @@ static PyObject *__pyx_f_7QAOrder___pyx_unpickle_QA_Order__set_state(struct __py
  *         __pyx_unpickle_QA_Order__set_state(<QA_Order> __pyx_result, __pyx_state)
  *     return __pyx_result
  * cdef __pyx_unpickle_QA_Order__set_state(QA_Order __pyx_result, tuple __pyx_state):             # <<<<<<<<<<<<<<
- *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.code = __pyx_state[6]; __pyx_result.commission_coeff = __pyx_state[7]; __pyx_result.date = __pyx_state[8]; __pyx_result.datetime = __pyx_state[9]; __pyx_result.exchange_id = __pyx_state[10]; __pyx_result.frequence = __pyx_state[11]; __pyx_result.market_type = __pyx_state[12]; __pyx_result.money = __pyx_state[13]; __pyx_result.order_id = __pyx_state[14]; __pyx_result.order_model = __pyx_state[15]; __pyx_result.price = __pyx_state[16]; __pyx_result.sending_time = __pyx_state[17]; __pyx_result.strategy = __pyx_state[18]; __pyx_result.tax_coeff = __pyx_state[19]; __pyx_result.towards = __pyx_state[20]; __pyx_result.trade_id = __pyx_state[21]; __pyx_result.trade_time = __pyx_state[22]; __pyx_result.user = __pyx_state[23]
- *     if len(__pyx_state) > 24 and hasattr(__pyx_result, '__dict__'):
+ *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.cancel_amount = __pyx_state[6]; __pyx_result.code = __pyx_state[7]; __pyx_result.commission_coeff = __pyx_state[8]; __pyx_result.date = __pyx_state[9]; __pyx_result.datetime = __pyx_state[10]; __pyx_result.exchange_code = __pyx_state[11]; __pyx_result.exchange_id = __pyx_state[12]; __pyx_result.frequence = __pyx_state[13]; __pyx_result.market_type = __pyx_state[14]; __pyx_result.money = __pyx_state[15]; __pyx_result.order_id = __pyx_state[16]; __pyx_result.order_model = __pyx_state[17]; __pyx_result.price = __pyx_state[18]; __pyx_result.realorder_id = __pyx_state[19]; __pyx_result.reason = __pyx_state[20]; __pyx_result.sending_time = __pyx_state[21]; __pyx_result.strategy = __pyx_state[22]; __pyx_result.tax_coeff = __pyx_state[23]; __pyx_result.time_condition = __pyx_state[24]; __pyx_result.towards = __pyx_state[25]; __pyx_result.trade_amount = __pyx_state[26]; __pyx_result.trade_id = __pyx_state[27]; __pyx_result.trade_price = __pyx_state[28]; __pyx_result.trade_time = __pyx_state[29]; __pyx_result.user_cookie = __pyx_state[30]
+ *     if len(__pyx_state) > 31 and hasattr(__pyx_result, '__dict__'):
  */
 
   /* function exit code */
@@ -14046,17 +14781,21 @@ static PyObject *__pyx_tp_new_7QAOrder_QA_Order(PyTypeObject *t, CYTHON_UNUSED P
   p->market_type = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->frequence = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->code = ((PyObject*)Py_None); Py_INCREF(Py_None);
-  p->user = ((PyObject*)Py_None); Py_INCREF(Py_None);
+  p->user_cookie = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->account_cookie = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->strategy = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->order_model = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->amount_model = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->broker = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->order_id = ((PyObject*)Py_None); Py_INCREF(Py_None);
+  p->realorder_id = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->trade_id = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->_status = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->callback = Py_None; Py_INCREF(Py_None);
   p->exchange_id = ((PyObject*)Py_None); Py_INCREF(Py_None);
+  p->reason = ((PyObject*)Py_None); Py_INCREF(Py_None);
+  p->time_condition = ((PyObject*)Py_None); Py_INCREF(Py_None);
+  p->exchange_code = ((PyObject*)Py_None); Py_INCREF(Py_None);
   return o;
 }
 
@@ -14075,17 +14814,21 @@ static void __pyx_tp_dealloc_7QAOrder_QA_Order(PyObject *o) {
   Py_CLEAR(p->market_type);
   Py_CLEAR(p->frequence);
   Py_CLEAR(p->code);
-  Py_CLEAR(p->user);
+  Py_CLEAR(p->user_cookie);
   Py_CLEAR(p->account_cookie);
   Py_CLEAR(p->strategy);
   Py_CLEAR(p->order_model);
   Py_CLEAR(p->amount_model);
   Py_CLEAR(p->broker);
   Py_CLEAR(p->order_id);
+  Py_CLEAR(p->realorder_id);
   Py_CLEAR(p->trade_id);
   Py_CLEAR(p->_status);
   Py_CLEAR(p->callback);
   Py_CLEAR(p->exchange_id);
+  Py_CLEAR(p->reason);
+  Py_CLEAR(p->time_condition);
+  Py_CLEAR(p->exchange_code);
   (*Py_TYPE(o)->tp_free)(o);
 }
 
@@ -14101,6 +14844,9 @@ static int __pyx_tp_traverse_7QAOrder_QA_Order(PyObject *o, visitproc v, void *a
   if (p->callback) {
     e = (*v)(p->callback, a); if (e) return e;
   }
+  if (p->exchange_code) {
+    e = (*v)(p->exchange_code, a); if (e) return e;
+  }
   return 0;
 }
 
@@ -14115,6 +14861,9 @@ static int __pyx_tp_clear_7QAOrder_QA_Order(PyObject *o) {
   Py_XDECREF(tmp);
   tmp = ((PyObject*)p->callback);
   p->callback = Py_None; Py_INCREF(Py_None);
+  Py_XDECREF(tmp);
+  tmp = ((PyObject*)p->exchange_code);
+  p->exchange_code = ((PyObject*)Py_None); Py_INCREF(Py_None);
   Py_XDECREF(tmp);
   return 0;
 }
@@ -14260,16 +15009,44 @@ static int __pyx_setprop_7QAOrder_8QA_Order_code(PyObject *o, PyObject *v, CYTHO
   }
 }
 
-static PyObject *__pyx_getprop_7QAOrder_8QA_Order_user(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_7QAOrder_8QA_Order_4user_1__get__(o);
+static PyObject *__pyx_getprop_7QAOrder_8QA_Order_user_cookie(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_7QAOrder_8QA_Order_11user_cookie_1__get__(o);
 }
 
-static int __pyx_setprop_7QAOrder_8QA_Order_user(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+static int __pyx_setprop_7QAOrder_8QA_Order_user_cookie(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
   if (v) {
-    return __pyx_pw_7QAOrder_8QA_Order_4user_3__set__(o, v);
+    return __pyx_pw_7QAOrder_8QA_Order_11user_cookie_3__set__(o, v);
   }
   else {
-    return __pyx_pw_7QAOrder_8QA_Order_4user_5__del__(o);
+    return __pyx_pw_7QAOrder_8QA_Order_11user_cookie_5__del__(o);
+  }
+}
+
+static PyObject *__pyx_getprop_7QAOrder_8QA_Order_trade_amount(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_7QAOrder_8QA_Order_12trade_amount_1__get__(o);
+}
+
+static int __pyx_setprop_7QAOrder_8QA_Order_trade_amount(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_7QAOrder_8QA_Order_12trade_amount_3__set__(o, v);
+  }
+  else {
+    PyErr_SetString(PyExc_NotImplementedError, "__del__");
+    return -1;
+  }
+}
+
+static PyObject *__pyx_getprop_7QAOrder_8QA_Order_cancel_amount(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_7QAOrder_8QA_Order_13cancel_amount_1__get__(o);
+}
+
+static int __pyx_setprop_7QAOrder_8QA_Order_cancel_amount(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_7QAOrder_8QA_Order_13cancel_amount_3__set__(o, v);
+  }
+  else {
+    PyErr_SetString(PyExc_NotImplementedError, "__del__");
+    return -1;
   }
 }
 
@@ -14365,6 +15142,19 @@ static int __pyx_setprop_7QAOrder_8QA_Order_order_id(PyObject *o, PyObject *v, C
   }
 }
 
+static PyObject *__pyx_getprop_7QAOrder_8QA_Order_realorder_id(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_7QAOrder_8QA_Order_12realorder_id_1__get__(o);
+}
+
+static int __pyx_setprop_7QAOrder_8QA_Order_realorder_id(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_7QAOrder_8QA_Order_12realorder_id_3__set__(o, v);
+  }
+  else {
+    return __pyx_pw_7QAOrder_8QA_Order_12realorder_id_5__del__(o);
+  }
+}
+
 static PyObject *__pyx_getprop_7QAOrder_8QA_Order_trade_id(PyObject *o, CYTHON_UNUSED void *x) {
   return __pyx_pw_7QAOrder_8QA_Order_8trade_id_1__get__(o);
 }
@@ -14445,6 +15235,59 @@ static int __pyx_setprop_7QAOrder_8QA_Order_exchange_id(PyObject *o, PyObject *v
   }
 }
 
+static PyObject *__pyx_getprop_7QAOrder_8QA_Order_trade_price(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_7QAOrder_8QA_Order_11trade_price_1__get__(o);
+}
+
+static int __pyx_setprop_7QAOrder_8QA_Order_trade_price(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_7QAOrder_8QA_Order_11trade_price_3__set__(o, v);
+  }
+  else {
+    PyErr_SetString(PyExc_NotImplementedError, "__del__");
+    return -1;
+  }
+}
+
+static PyObject *__pyx_getprop_7QAOrder_8QA_Order_reason(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_7QAOrder_8QA_Order_6reason_1__get__(o);
+}
+
+static int __pyx_setprop_7QAOrder_8QA_Order_reason(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_7QAOrder_8QA_Order_6reason_3__set__(o, v);
+  }
+  else {
+    return __pyx_pw_7QAOrder_8QA_Order_6reason_5__del__(o);
+  }
+}
+
+static PyObject *__pyx_getprop_7QAOrder_8QA_Order_time_condition(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_7QAOrder_8QA_Order_14time_condition_1__get__(o);
+}
+
+static int __pyx_setprop_7QAOrder_8QA_Order_time_condition(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_7QAOrder_8QA_Order_14time_condition_3__set__(o, v);
+  }
+  else {
+    return __pyx_pw_7QAOrder_8QA_Order_14time_condition_5__del__(o);
+  }
+}
+
+static PyObject *__pyx_getprop_7QAOrder_8QA_Order_exchange_code(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_7QAOrder_8QA_Order_13exchange_code_1__get__(o);
+}
+
+static int __pyx_setprop_7QAOrder_8QA_Order_exchange_code(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_7QAOrder_8QA_Order_13exchange_code_3__set__(o, v);
+  }
+  else {
+    return __pyx_pw_7QAOrder_8QA_Order_13exchange_code_5__del__(o);
+  }
+}
+
 static PyMethodDef __pyx_methods_7QAOrder_QA_Order[] = {
   {"get_exchange", (PyCFunction)__pyx_pw_7QAOrder_8QA_Order_5get_exchange, METH_O, 0},
   {"create", (PyCFunction)__pyx_pw_7QAOrder_8QA_Order_7create, METH_NOARGS, __pyx_doc_7QAOrder_8QA_Order_6create},
@@ -14480,7 +15323,9 @@ static struct PyGetSetDef __pyx_getsets_7QAOrder_QA_Order[] = {
   {(char *)"frequence", __pyx_getprop_7QAOrder_8QA_Order_frequence, __pyx_setprop_7QAOrder_8QA_Order_frequence, (char *)0, 0},
   {(char *)"towards", __pyx_getprop_7QAOrder_8QA_Order_towards, __pyx_setprop_7QAOrder_8QA_Order_towards, (char *)0, 0},
   {(char *)"code", __pyx_getprop_7QAOrder_8QA_Order_code, __pyx_setprop_7QAOrder_8QA_Order_code, (char *)0, 0},
-  {(char *)"user", __pyx_getprop_7QAOrder_8QA_Order_user, __pyx_setprop_7QAOrder_8QA_Order_user, (char *)0, 0},
+  {(char *)"user_cookie", __pyx_getprop_7QAOrder_8QA_Order_user_cookie, __pyx_setprop_7QAOrder_8QA_Order_user_cookie, (char *)0, 0},
+  {(char *)"trade_amount", __pyx_getprop_7QAOrder_8QA_Order_trade_amount, __pyx_setprop_7QAOrder_8QA_Order_trade_amount, (char *)0, 0},
+  {(char *)"cancel_amount", __pyx_getprop_7QAOrder_8QA_Order_cancel_amount, __pyx_setprop_7QAOrder_8QA_Order_cancel_amount, (char *)0, 0},
   {(char *)"account_cookie", __pyx_getprop_7QAOrder_8QA_Order_account_cookie, __pyx_setprop_7QAOrder_8QA_Order_account_cookie, (char *)0, 0},
   {(char *)"strategy", __pyx_getprop_7QAOrder_8QA_Order_strategy, __pyx_setprop_7QAOrder_8QA_Order_strategy, (char *)0, 0},
   {(char *)"order_model", __pyx_getprop_7QAOrder_8QA_Order_order_model, __pyx_setprop_7QAOrder_8QA_Order_order_model, (char *)0, 0},
@@ -14488,12 +15333,17 @@ static struct PyGetSetDef __pyx_getsets_7QAOrder_QA_Order[] = {
   {(char *)"amount_model", __pyx_getprop_7QAOrder_8QA_Order_amount_model, __pyx_setprop_7QAOrder_8QA_Order_amount_model, (char *)0, 0},
   {(char *)"broker", __pyx_getprop_7QAOrder_8QA_Order_broker, __pyx_setprop_7QAOrder_8QA_Order_broker, (char *)0, 0},
   {(char *)"order_id", __pyx_getprop_7QAOrder_8QA_Order_order_id, __pyx_setprop_7QAOrder_8QA_Order_order_id, (char *)0, 0},
+  {(char *)"realorder_id", __pyx_getprop_7QAOrder_8QA_Order_realorder_id, __pyx_setprop_7QAOrder_8QA_Order_realorder_id, (char *)0, 0},
   {(char *)"trade_id", __pyx_getprop_7QAOrder_8QA_Order_trade_id, __pyx_setprop_7QAOrder_8QA_Order_trade_id, (char *)0, 0},
   {(char *)"_status", __pyx_getprop_7QAOrder_8QA_Order__status, __pyx_setprop_7QAOrder_8QA_Order__status, (char *)0, 0},
   {(char *)"callback", __pyx_getprop_7QAOrder_8QA_Order_callback, __pyx_setprop_7QAOrder_8QA_Order_callback, (char *)0, 0},
   {(char *)"commission_coeff", __pyx_getprop_7QAOrder_8QA_Order_commission_coeff, __pyx_setprop_7QAOrder_8QA_Order_commission_coeff, (char *)0, 0},
   {(char *)"tax_coeff", __pyx_getprop_7QAOrder_8QA_Order_tax_coeff, __pyx_setprop_7QAOrder_8QA_Order_tax_coeff, (char *)0, 0},
   {(char *)"exchange_id", __pyx_getprop_7QAOrder_8QA_Order_exchange_id, __pyx_setprop_7QAOrder_8QA_Order_exchange_id, (char *)0, 0},
+  {(char *)"trade_price", __pyx_getprop_7QAOrder_8QA_Order_trade_price, __pyx_setprop_7QAOrder_8QA_Order_trade_price, (char *)0, 0},
+  {(char *)"reason", __pyx_getprop_7QAOrder_8QA_Order_reason, __pyx_setprop_7QAOrder_8QA_Order_reason, (char *)0, 0},
+  {(char *)"time_condition", __pyx_getprop_7QAOrder_8QA_Order_time_condition, __pyx_setprop_7QAOrder_8QA_Order_time_condition, (char *)0, 0},
+  {(char *)"exchange_code", __pyx_getprop_7QAOrder_8QA_Order_exchange_code, __pyx_setprop_7QAOrder_8QA_Order_exchange_code, (char *)0, 0},
   {0, 0, 0, 0, 0}
 };
 
@@ -14795,7 +15645,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_FAILED, __pyx_k_FAILED, sizeof(__pyx_k_FAILED), 0, 0, 1, 1},
   {&__pyx_kp_s_Failed_to_tran_from_dict, __pyx_k_Failed_to_tran_from_dict, sizeof(__pyx_k_Failed_to_tran_from_dict), 0, 0, 1, 0},
   {&__pyx_n_s_GFD, __pyx_k_GFD, sizeof(__pyx_k_GFD), 0, 0, 1, 1},
-  {&__pyx_kp_s_Incompatible_checksums_s_vs_0x43, __pyx_k_Incompatible_checksums_s_vs_0x43, sizeof(__pyx_k_Incompatible_checksums_s_vs_0x43), 0, 0, 1, 0},
+  {&__pyx_kp_s_Incompatible_checksums_s_vs_0x88, __pyx_k_Incompatible_checksums_s_vs_0x88, sizeof(__pyx_k_Incompatible_checksums_s_vs_0x88), 0, 0, 1, 0},
   {&__pyx_kp_s_Incompatible_checksums_s_vs_0xec, __pyx_k_Incompatible_checksums_s_vs_0xec, sizeof(__pyx_k_Incompatible_checksums_s_vs_0xec), 0, 0, 1, 0},
   {&__pyx_n_s_NEW, __pyx_k_NEW, sizeof(__pyx_k_NEW), 0, 0, 1, 1},
   {&__pyx_n_s_NEXT, __pyx_k_NEXT, sizeof(__pyx_k_NEXT), 0, 0, 1, 1},
@@ -14926,10 +15776,9 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_trade_id, __pyx_k_trade_id, sizeof(__pyx_k_trade_id), 0, 0, 1, 1},
   {&__pyx_n_s_trade_price, __pyx_k_trade_price, sizeof(__pyx_k_trade_price), 0, 0, 1, 1},
   {&__pyx_n_s_trade_time, __pyx_k_trade_time, sizeof(__pyx_k_trade_time), 0, 0, 1, 1},
-  {&__pyx_n_s_type, __pyx_k_type, sizeof(__pyx_k_type), 0, 0, 1, 1},
   {&__pyx_n_s_update, __pyx_k_update, sizeof(__pyx_k_update), 0, 0, 1, 1},
   {&__pyx_n_s_upper, __pyx_k_upper, sizeof(__pyx_k_upper), 0, 0, 1, 1},
-  {&__pyx_n_s_user, __pyx_k_user, sizeof(__pyx_k_user), 0, 0, 1, 1},
+  {&__pyx_n_s_user_cookie, __pyx_k_user_cookie, sizeof(__pyx_k_user_cookie), 0, 0, 1, 1},
   {&__pyx_n_s_user_id, __pyx_k_user_id, sizeof(__pyx_k_user_id), 0, 0, 1, 1},
   {&__pyx_n_s_values, __pyx_k_values, sizeof(__pyx_k_values), 0, 0, 1, 1},
   {&__pyx_n_s_vars, __pyx_k_vars, sizeof(__pyx_k_vars), 0, 0, 1, 1},
@@ -14940,9 +15789,9 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(0, 336, __pyx_L1_error)
-  __pyx_builtin_eval = __Pyx_GetBuiltinName(__pyx_n_s_eval); if (!__pyx_builtin_eval) __PYX_ERR(0, 352, __pyx_L1_error)
-  __pyx_builtin_vars = __Pyx_GetBuiltinName(__pyx_n_s_vars); if (!__pyx_builtin_vars) __PYX_ERR(0, 372, __pyx_L1_error)
+  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(0, 342, __pyx_L1_error)
+  __pyx_builtin_eval = __Pyx_GetBuiltinName(__pyx_n_s_eval); if (!__pyx_builtin_eval) __PYX_ERR(0, 358, __pyx_L1_error)
+  __pyx_builtin_vars = __Pyx_GetBuiltinName(__pyx_n_s_vars); if (!__pyx_builtin_vars) __PYX_ERR(0, 378, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -14952,14 +15801,14 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "QAOrder.pyx":171
+  /* "QAOrder.pyx":178
  *             self.datetime = '{} 09:31:00'.format(self.date)
  *         elif date is None and datetime is not None:
  *             self.date = datetime[0:10]             # <<<<<<<<<<<<<<
  *             self.datetime = datetime
  *         elif date is not None and datetime is not None:
  */
-  __pyx_slice__3 = PySlice_New(__pyx_int_0, __pyx_int_10, Py_None); if (unlikely(!__pyx_slice__3)) __PYX_ERR(0, 171, __pyx_L1_error)
+  __pyx_slice__3 = PySlice_New(__pyx_int_0, __pyx_int_10, Py_None); if (unlikely(!__pyx_slice__3)) __PYX_ERR(0, 178, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_slice__3);
   __Pyx_GIVEREF(__pyx_slice__3);
 
@@ -14992,7 +15841,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitGlobals(void) {
   __pyx_int_0 = PyInt_FromLong(0); if (unlikely(!__pyx_int_0)) __PYX_ERR(0, 1, __pyx_L1_error)
   __pyx_int_1 = PyInt_FromLong(1); if (unlikely(!__pyx_int_1)) __PYX_ERR(0, 1, __pyx_L1_error)
   __pyx_int_10 = PyInt_FromLong(10); if (unlikely(!__pyx_int_10)) __PYX_ERR(0, 1, __pyx_L1_error)
-  __pyx_int_71282001 = PyInt_FromLong(71282001L); if (unlikely(!__pyx_int_71282001)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_int_143061940 = PyInt_FromLong(143061940L); if (unlikely(!__pyx_int_143061940)) __PYX_ERR(0, 1, __pyx_L1_error)
   __pyx_int_247532701 = PyInt_FromLong(247532701L); if (unlikely(!__pyx_int_247532701)) __PYX_ERR(0, 1, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
@@ -15063,14 +15912,14 @@ static int __Pyx_modinit_type_init_code(void) {
   if (PyObject_SetAttr(__pyx_m, __pyx_n_s_QA_Order, (PyObject *)&__pyx_type_7QAOrder_QA_Order) < 0) __PYX_ERR(0, 60, __pyx_L1_error)
   if (__Pyx_setup_reduce((PyObject*)&__pyx_type_7QAOrder_QA_Order) < 0) __PYX_ERR(0, 60, __pyx_L1_error)
   __pyx_ptype_7QAOrder_QA_Order = &__pyx_type_7QAOrder_QA_Order;
-  if (PyType_Ready(&__pyx_type_7QAOrder_QA_OrderQueue) < 0) __PYX_ERR(0, 547, __pyx_L1_error)
+  if (PyType_Ready(&__pyx_type_7QAOrder_QA_OrderQueue) < 0) __PYX_ERR(0, 552, __pyx_L1_error)
   __pyx_type_7QAOrder_QA_OrderQueue.tp_print = 0;
   if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_type_7QAOrder_QA_OrderQueue.tp_dictoffset && __pyx_type_7QAOrder_QA_OrderQueue.tp_getattro == PyObject_GenericGetAttr)) {
     __pyx_type_7QAOrder_QA_OrderQueue.tp_getattro = __Pyx_PyObject_GenericGetAttr;
   }
   #if CYTHON_COMPILING_IN_CPYTHON
   {
-    PyObject *wrapper = PyObject_GetAttrString((PyObject *)&__pyx_type_7QAOrder_QA_OrderQueue, "__init__"); if (unlikely(!wrapper)) __PYX_ERR(0, 547, __pyx_L1_error)
+    PyObject *wrapper = PyObject_GetAttrString((PyObject *)&__pyx_type_7QAOrder_QA_OrderQueue, "__init__"); if (unlikely(!wrapper)) __PYX_ERR(0, 552, __pyx_L1_error)
     if (Py_TYPE(wrapper) == &PyWrapperDescr_Type) {
       __pyx_wrapperbase_7QAOrder_13QA_OrderQueue___init__ = *((PyWrapperDescrObject *)wrapper)->d_base;
       __pyx_wrapperbase_7QAOrder_13QA_OrderQueue___init__.doc = __pyx_doc_7QAOrder_13QA_OrderQueue___init__;
@@ -15078,8 +15927,8 @@ static int __Pyx_modinit_type_init_code(void) {
     }
   }
   #endif
-  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_QA_OrderQueue, (PyObject *)&__pyx_type_7QAOrder_QA_OrderQueue) < 0) __PYX_ERR(0, 547, __pyx_L1_error)
-  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_7QAOrder_QA_OrderQueue) < 0) __PYX_ERR(0, 547, __pyx_L1_error)
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_QA_OrderQueue, (PyObject *)&__pyx_type_7QAOrder_QA_OrderQueue) < 0) __PYX_ERR(0, 552, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_7QAOrder_QA_OrderQueue) < 0) __PYX_ERR(0, 552, __pyx_L1_error)
   __pyx_ptype_7QAOrder_QA_OrderQueue = &__pyx_type_7QAOrder_QA_OrderQueue;
   __Pyx_RefNannyFinishContext();
   return 0;
@@ -15462,97 +16311,97 @@ if (!__Pyx_RefNanny) {
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":107
+  /* "QAOrder.pyx":114
  *             order_model=None,
  *             money=None,
  *             amount_model=AMOUNT_MODEL.BY_AMOUNT,             # <<<<<<<<<<<<<<
  *             broker=None,
  *             order_id=None,
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_AMOUNT_MODEL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 107, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_AMOUNT_MODEL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 114, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_BY_AMOUNT); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 107, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_BY_AMOUNT); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 114, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_k_ = __pyx_t_2;
   __Pyx_GIVEREF(__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "QAOrder.pyx":111
+  /* "QAOrder.pyx":118
  *             order_id=None,
  *             trade_id=False,
  *             _status=ORDER_STATUS.NEW,             # <<<<<<<<<<<<<<
  *             callback=False,
  *             commission_coeff=0.00025,
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 111, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_ORDER_STATUS); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 118, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_NEW); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 111, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_NEW); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 118, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_k__2 = __pyx_t_1;
   __Pyx_GIVEREF(__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "QAOrder.pyx":697
+  /* "QAOrder.pyx":702
  * 
  * 
  * if __name__ == '__main__':             # <<<<<<<<<<<<<<
  *     ax = QA_Order()
  * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 697, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 702, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = (__Pyx_PyString_Equals(__pyx_t_1, __pyx_n_s_main, Py_EQ)); if (unlikely(__pyx_t_3 < 0)) __PYX_ERR(0, 697, __pyx_L1_error)
+  __pyx_t_3 = (__Pyx_PyString_Equals(__pyx_t_1, __pyx_n_s_main, Py_EQ)); if (unlikely(__pyx_t_3 < 0)) __PYX_ERR(0, 702, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   if (__pyx_t_3) {
 
-    /* "QAOrder.pyx":698
+    /* "QAOrder.pyx":703
  * 
  * if __name__ == '__main__':
  *     ax = QA_Order()             # <<<<<<<<<<<<<<
  * 
  *     print(ax.info())
  */
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(((PyObject *)__pyx_ptype_7QAOrder_QA_Order)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 698, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(((PyObject *)__pyx_ptype_7QAOrder_QA_Order)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 703, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    if (PyDict_SetItem(__pyx_d, __pyx_n_s_ax, __pyx_t_1) < 0) __PYX_ERR(0, 698, __pyx_L1_error)
+    if (PyDict_SetItem(__pyx_d, __pyx_n_s_ax, __pyx_t_1) < 0) __PYX_ERR(0, 703, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-    /* "QAOrder.pyx":700
+    /* "QAOrder.pyx":705
  *     ax = QA_Order()
  * 
  *     print(ax.info())             # <<<<<<<<<<<<<<
  *     print(ax.to_df())
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ax); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 700, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ax); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 705, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_info); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 700, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_info); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 705, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 700, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 705, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    if (__Pyx_PrintOne(0, __pyx_t_1) < 0) __PYX_ERR(0, 700, __pyx_L1_error)
+    if (__Pyx_PrintOne(0, __pyx_t_1) < 0) __PYX_ERR(0, 705, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-    /* "QAOrder.pyx":701
+    /* "QAOrder.pyx":706
  * 
  *     print(ax.info())
  *     print(ax.to_df())             # <<<<<<<<<<<<<<
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ax); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 701, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_ax); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 706, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_to_df); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 701, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_to_df); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 706, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 701, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 706, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    if (__Pyx_PrintOne(0, __pyx_t_1) < 0) __PYX_ERR(0, 701, __pyx_L1_error)
+    if (__Pyx_PrintOne(0, __pyx_t_1) < 0) __PYX_ERR(0, 706, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-    /* "QAOrder.pyx":697
+    /* "QAOrder.pyx":702
  * 
  * 
  * if __name__ == '__main__':             # <<<<<<<<<<<<<<
@@ -15575,8 +16424,8 @@ if (!__Pyx_RefNanny) {
  *         __pyx_unpickle_QA_Order__set_state(<QA_Order> __pyx_result, __pyx_state)
  *     return __pyx_result
  * cdef __pyx_unpickle_QA_Order__set_state(QA_Order __pyx_result, tuple __pyx_state):             # <<<<<<<<<<<<<<
- *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.code = __pyx_state[6]; __pyx_result.commission_coeff = __pyx_state[7]; __pyx_result.date = __pyx_state[8]; __pyx_result.datetime = __pyx_state[9]; __pyx_result.exchange_id = __pyx_state[10]; __pyx_result.frequence = __pyx_state[11]; __pyx_result.market_type = __pyx_state[12]; __pyx_result.money = __pyx_state[13]; __pyx_result.order_id = __pyx_state[14]; __pyx_result.order_model = __pyx_state[15]; __pyx_result.price = __pyx_state[16]; __pyx_result.sending_time = __pyx_state[17]; __pyx_result.strategy = __pyx_state[18]; __pyx_result.tax_coeff = __pyx_state[19]; __pyx_result.towards = __pyx_state[20]; __pyx_result.trade_id = __pyx_state[21]; __pyx_result.trade_time = __pyx_state[22]; __pyx_result.user = __pyx_state[23]
- *     if len(__pyx_state) > 24 and hasattr(__pyx_result, '__dict__'):
+ *     __pyx_result._status = __pyx_state[0]; __pyx_result.account_cookie = __pyx_state[1]; __pyx_result.amount = __pyx_state[2]; __pyx_result.amount_model = __pyx_state[3]; __pyx_result.broker = __pyx_state[4]; __pyx_result.callback = __pyx_state[5]; __pyx_result.cancel_amount = __pyx_state[6]; __pyx_result.code = __pyx_state[7]; __pyx_result.commission_coeff = __pyx_state[8]; __pyx_result.date = __pyx_state[9]; __pyx_result.datetime = __pyx_state[10]; __pyx_result.exchange_code = __pyx_state[11]; __pyx_result.exchange_id = __pyx_state[12]; __pyx_result.frequence = __pyx_state[13]; __pyx_result.market_type = __pyx_state[14]; __pyx_result.money = __pyx_state[15]; __pyx_result.order_id = __pyx_state[16]; __pyx_result.order_model = __pyx_state[17]; __pyx_result.price = __pyx_state[18]; __pyx_result.realorder_id = __pyx_state[19]; __pyx_result.reason = __pyx_state[20]; __pyx_result.sending_time = __pyx_state[21]; __pyx_result.strategy = __pyx_state[22]; __pyx_result.tax_coeff = __pyx_state[23]; __pyx_result.time_condition = __pyx_state[24]; __pyx_result.towards = __pyx_state[25]; __pyx_result.trade_amount = __pyx_state[26]; __pyx_result.trade_id = __pyx_state[27]; __pyx_result.trade_price = __pyx_state[28]; __pyx_result.trade_time = __pyx_state[29]; __pyx_result.user_cookie = __pyx_state[30]
+ *     if len(__pyx_state) > 31 and hasattr(__pyx_result, '__dict__'):
  */
   __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7QAOrder_3__pyx_unpickle_QA_OrderQueue, NULL, __pyx_n_s_QAOrder); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
@@ -16154,20 +17003,6 @@ bad:
     return NULL;
 }
 
-/* PyObjectSetAttrStr */
-#if CYTHON_USE_TYPE_SLOTS
-static CYTHON_INLINE int __Pyx_PyObject_SetAttrStr(PyObject* obj, PyObject* attr_name, PyObject* value) {
-    PyTypeObject* tp = Py_TYPE(obj);
-    if (likely(tp->tp_setattro))
-        return tp->tp_setattro(obj, attr_name, value);
-#if PY_MAJOR_VERSION < 3
-    if (likely(tp->tp_setattr))
-        return tp->tp_setattr(obj, PyString_AS_STRING(attr_name), value);
-#endif
-    return PyObject_SetAttr(obj, attr_name, value);
-}
-#endif
-
 /* PyDictVersioning */
 #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_TYPE_SLOTS
 static CYTHON_INLINE PY_UINT64_T __Pyx_get_tp_dict_version(PyObject *obj) {
@@ -16378,73 +17213,6 @@ return_ne:
 #endif
 }
 
-/* PyIntCompare */
-static CYTHON_INLINE PyObject* __Pyx_PyInt_EqObjC(PyObject *op1, PyObject *op2, CYTHON_UNUSED long intval, CYTHON_UNUSED long inplace) {
-    if (op1 == op2) {
-        Py_RETURN_TRUE;
-    }
-    #if PY_MAJOR_VERSION < 3
-    if (likely(PyInt_CheckExact(op1))) {
-        const long b = intval;
-        long a = PyInt_AS_LONG(op1);
-        if (a == b) Py_RETURN_TRUE; else Py_RETURN_FALSE;
-    }
-    #endif
-    #if CYTHON_USE_PYLONG_INTERNALS
-    if (likely(PyLong_CheckExact(op1))) {
-        int unequal;
-        unsigned long uintval;
-        Py_ssize_t size = Py_SIZE(op1);
-        const digit* digits = ((PyLongObject*)op1)->ob_digit;
-        if (intval == 0) {
-            if (size == 0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
-        } else if (intval < 0) {
-            if (size >= 0)
-                Py_RETURN_FALSE;
-            intval = -intval;
-            size = -size;
-        } else {
-            if (size <= 0)
-                Py_RETURN_FALSE;
-        }
-        uintval = (unsigned long) intval;
-#if PyLong_SHIFT * 4 < SIZEOF_LONG*8
-        if (uintval >> (PyLong_SHIFT * 4)) {
-            unequal = (size != 5) || (digits[0] != (uintval & (unsigned long) PyLong_MASK))
-                 | (digits[1] != ((uintval >> (1 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK)) | (digits[2] != ((uintval >> (2 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK)) | (digits[3] != ((uintval >> (3 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK)) | (digits[4] != ((uintval >> (4 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK));
-        } else
-#endif
-#if PyLong_SHIFT * 3 < SIZEOF_LONG*8
-        if (uintval >> (PyLong_SHIFT * 3)) {
-            unequal = (size != 4) || (digits[0] != (uintval & (unsigned long) PyLong_MASK))
-                 | (digits[1] != ((uintval >> (1 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK)) | (digits[2] != ((uintval >> (2 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK)) | (digits[3] != ((uintval >> (3 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK));
-        } else
-#endif
-#if PyLong_SHIFT * 2 < SIZEOF_LONG*8
-        if (uintval >> (PyLong_SHIFT * 2)) {
-            unequal = (size != 3) || (digits[0] != (uintval & (unsigned long) PyLong_MASK))
-                 | (digits[1] != ((uintval >> (1 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK)) | (digits[2] != ((uintval >> (2 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK));
-        } else
-#endif
-#if PyLong_SHIFT * 1 < SIZEOF_LONG*8
-        if (uintval >> (PyLong_SHIFT * 1)) {
-            unequal = (size != 2) || (digits[0] != (uintval & (unsigned long) PyLong_MASK))
-                 | (digits[1] != ((uintval >> (1 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK));
-        } else
-#endif
-            unequal = (size != 1) || (((unsigned long) digits[0]) != (uintval & (unsigned long) PyLong_MASK));
-        if (unequal == 0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
-    }
-    #endif
-    if (PyFloat_CheckExact(op1)) {
-        const long b = intval;
-        double a = PyFloat_AS_DOUBLE(op1);
-        if ((double)a == (double)b) Py_RETURN_TRUE; else Py_RETURN_FALSE;
-    }
-    return (
-        PyObject_RichCompare(op1, op2, Py_EQ));
-}
-
 /* PyObjectCallNoArg */
 #if CYTHON_COMPILING_IN_CPYTHON
 static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func) {
@@ -16467,119 +17235,27 @@ static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func) {
 }
 #endif
 
-/* GetItemInt */
-static PyObject *__Pyx_GetItemInt_Generic(PyObject *o, PyObject* j) {
-    PyObject *r;
-    if (!j) return NULL;
-    r = PyObject_GetItem(o, j);
-    Py_DECREF(j);
-    return r;
-}
-static CYTHON_INLINE PyObject *__Pyx_GetItemInt_List_Fast(PyObject *o, Py_ssize_t i,
-                                                              CYTHON_NCP_UNUSED int wraparound,
-                                                              CYTHON_NCP_UNUSED int boundscheck) {
-#if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-    Py_ssize_t wrapped_i = i;
-    if (wraparound & unlikely(i < 0)) {
-        wrapped_i += PyList_GET_SIZE(o);
-    }
-    if ((!boundscheck) || likely(__Pyx_is_valid_index(wrapped_i, PyList_GET_SIZE(o)))) {
-        PyObject *r = PyList_GET_ITEM(o, wrapped_i);
-        Py_INCREF(r);
-        return r;
-    }
-    return __Pyx_GetItemInt_Generic(o, PyInt_FromSsize_t(i));
-#else
-    return PySequence_GetItem(o, i);
-#endif
-}
-static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Tuple_Fast(PyObject *o, Py_ssize_t i,
-                                                              CYTHON_NCP_UNUSED int wraparound,
-                                                              CYTHON_NCP_UNUSED int boundscheck) {
-#if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-    Py_ssize_t wrapped_i = i;
-    if (wraparound & unlikely(i < 0)) {
-        wrapped_i += PyTuple_GET_SIZE(o);
-    }
-    if ((!boundscheck) || likely(__Pyx_is_valid_index(wrapped_i, PyTuple_GET_SIZE(o)))) {
-        PyObject *r = PyTuple_GET_ITEM(o, wrapped_i);
-        Py_INCREF(r);
-        return r;
-    }
-    return __Pyx_GetItemInt_Generic(o, PyInt_FromSsize_t(i));
-#else
-    return PySequence_GetItem(o, i);
-#endif
-}
-static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Fast(PyObject *o, Py_ssize_t i, int is_list,
-                                                     CYTHON_NCP_UNUSED int wraparound,
-                                                     CYTHON_NCP_UNUSED int boundscheck) {
-#if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS && CYTHON_USE_TYPE_SLOTS
-    if (is_list || PyList_CheckExact(o)) {
-        Py_ssize_t n = ((!wraparound) | likely(i >= 0)) ? i : i + PyList_GET_SIZE(o);
-        if ((!boundscheck) || (likely(__Pyx_is_valid_index(n, PyList_GET_SIZE(o))))) {
-            PyObject *r = PyList_GET_ITEM(o, n);
-            Py_INCREF(r);
-            return r;
-        }
-    }
-    else if (PyTuple_CheckExact(o)) {
-        Py_ssize_t n = ((!wraparound) | likely(i >= 0)) ? i : i + PyTuple_GET_SIZE(o);
-        if ((!boundscheck) || likely(__Pyx_is_valid_index(n, PyTuple_GET_SIZE(o)))) {
-            PyObject *r = PyTuple_GET_ITEM(o, n);
-            Py_INCREF(r);
-            return r;
-        }
-    } else {
-        PySequenceMethods *m = Py_TYPE(o)->tp_as_sequence;
-        if (likely(m && m->sq_item)) {
-            if (wraparound && unlikely(i < 0) && likely(m->sq_length)) {
-                Py_ssize_t l = m->sq_length(o);
-                if (likely(l >= 0)) {
-                    i += l;
-                } else {
-                    if (!PyErr_ExceptionMatches(PyExc_OverflowError))
-                        return NULL;
-                    PyErr_Clear();
+/* DictGetItem */
+#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
+static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key) {
+    PyObject *value;
+    value = PyDict_GetItemWithError(d, key);
+    if (unlikely(!value)) {
+        if (!PyErr_Occurred()) {
+            if (unlikely(PyTuple_Check(key))) {
+                PyObject* args = PyTuple_Pack(1, key);
+                if (likely(args)) {
+                    PyErr_SetObject(PyExc_KeyError, args);
+                    Py_DECREF(args);
                 }
+            } else {
+                PyErr_SetObject(PyExc_KeyError, key);
             }
-            return m->sq_item(o, i);
         }
-    }
-#else
-    if (is_list || PySequence_Check(o)) {
-        return PySequence_GetItem(o, i);
-    }
-#endif
-    return __Pyx_GetItemInt_Generic(o, PyInt_FromSsize_t(i));
-}
-
-/* ObjectGetItem */
-#if CYTHON_USE_TYPE_SLOTS
-static PyObject *__Pyx_PyObject_GetIndex(PyObject *obj, PyObject* index) {
-    PyObject *runerr;
-    Py_ssize_t key_value;
-    PySequenceMethods *m = Py_TYPE(obj)->tp_as_sequence;
-    if (unlikely(!(m && m->sq_item))) {
-        PyErr_Format(PyExc_TypeError, "'%.200s' object is not subscriptable", Py_TYPE(obj)->tp_name);
         return NULL;
     }
-    key_value = __Pyx_PyIndex_AsSsize_t(index);
-    if (likely(key_value != -1 || !(runerr = PyErr_Occurred()))) {
-        return __Pyx_GetItemInt_Fast(obj, key_value, 0, 1, 1);
-    }
-    if (PyErr_GivenExceptionMatches(runerr, PyExc_OverflowError)) {
-        PyErr_Clear();
-        PyErr_Format(PyExc_IndexError, "cannot fit '%.200s' into an index-sized integer", Py_TYPE(index)->tp_name);
-    }
-    return NULL;
-}
-static PyObject *__Pyx_PyObject_GetItem(PyObject *obj, PyObject* key) {
-    PyMappingMethods *m = Py_TYPE(obj)->tp_as_mapping;
-    if (likely(m && m->mp_subscript)) {
-        return m->mp_subscript(obj, key);
-    }
-    return __Pyx_PyObject_GetIndex(obj, key);
+    Py_INCREF(value);
+    return value;
 }
 #endif
 
@@ -16921,29 +17597,86 @@ bad:
     return -1;
 }
 
-/* DictGetItem */
-#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
-static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key) {
-    PyObject *value;
-    value = PyDict_GetItemWithError(d, key);
-    if (unlikely(!value)) {
-        if (!PyErr_Occurred()) {
-            if (unlikely(PyTuple_Check(key))) {
-                PyObject* args = PyTuple_Pack(1, key);
-                if (likely(args)) {
-                    PyErr_SetObject(PyExc_KeyError, args);
-                    Py_DECREF(args);
-                }
-            } else {
-                PyErr_SetObject(PyExc_KeyError, key);
-            }
-        }
-        return NULL;
-    }
-    Py_INCREF(value);
-    return value;
+/* PyObjectSetAttrStr */
+#if CYTHON_USE_TYPE_SLOTS
+static CYTHON_INLINE int __Pyx_PyObject_SetAttrStr(PyObject* obj, PyObject* attr_name, PyObject* value) {
+    PyTypeObject* tp = Py_TYPE(obj);
+    if (likely(tp->tp_setattro))
+        return tp->tp_setattro(obj, attr_name, value);
+#if PY_MAJOR_VERSION < 3
+    if (likely(tp->tp_setattr))
+        return tp->tp_setattr(obj, PyString_AS_STRING(attr_name), value);
+#endif
+    return PyObject_SetAttr(obj, attr_name, value);
 }
 #endif
+
+/* PyIntCompare */
+static CYTHON_INLINE PyObject* __Pyx_PyInt_EqObjC(PyObject *op1, PyObject *op2, CYTHON_UNUSED long intval, CYTHON_UNUSED long inplace) {
+    if (op1 == op2) {
+        Py_RETURN_TRUE;
+    }
+    #if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_CheckExact(op1))) {
+        const long b = intval;
+        long a = PyInt_AS_LONG(op1);
+        if (a == b) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+    }
+    #endif
+    #if CYTHON_USE_PYLONG_INTERNALS
+    if (likely(PyLong_CheckExact(op1))) {
+        int unequal;
+        unsigned long uintval;
+        Py_ssize_t size = Py_SIZE(op1);
+        const digit* digits = ((PyLongObject*)op1)->ob_digit;
+        if (intval == 0) {
+            if (size == 0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+        } else if (intval < 0) {
+            if (size >= 0)
+                Py_RETURN_FALSE;
+            intval = -intval;
+            size = -size;
+        } else {
+            if (size <= 0)
+                Py_RETURN_FALSE;
+        }
+        uintval = (unsigned long) intval;
+#if PyLong_SHIFT * 4 < SIZEOF_LONG*8
+        if (uintval >> (PyLong_SHIFT * 4)) {
+            unequal = (size != 5) || (digits[0] != (uintval & (unsigned long) PyLong_MASK))
+                 | (digits[1] != ((uintval >> (1 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK)) | (digits[2] != ((uintval >> (2 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK)) | (digits[3] != ((uintval >> (3 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK)) | (digits[4] != ((uintval >> (4 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK));
+        } else
+#endif
+#if PyLong_SHIFT * 3 < SIZEOF_LONG*8
+        if (uintval >> (PyLong_SHIFT * 3)) {
+            unequal = (size != 4) || (digits[0] != (uintval & (unsigned long) PyLong_MASK))
+                 | (digits[1] != ((uintval >> (1 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK)) | (digits[2] != ((uintval >> (2 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK)) | (digits[3] != ((uintval >> (3 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK));
+        } else
+#endif
+#if PyLong_SHIFT * 2 < SIZEOF_LONG*8
+        if (uintval >> (PyLong_SHIFT * 2)) {
+            unequal = (size != 3) || (digits[0] != (uintval & (unsigned long) PyLong_MASK))
+                 | (digits[1] != ((uintval >> (1 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK)) | (digits[2] != ((uintval >> (2 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK));
+        } else
+#endif
+#if PyLong_SHIFT * 1 < SIZEOF_LONG*8
+        if (uintval >> (PyLong_SHIFT * 1)) {
+            unequal = (size != 2) || (digits[0] != (uintval & (unsigned long) PyLong_MASK))
+                 | (digits[1] != ((uintval >> (1 * PyLong_SHIFT)) & (unsigned long) PyLong_MASK));
+        } else
+#endif
+            unequal = (size != 1) || (((unsigned long) digits[0]) != (uintval & (unsigned long) PyLong_MASK));
+        if (unequal == 0) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+    }
+    #endif
+    if (PyFloat_CheckExact(op1)) {
+        const long b = intval;
+        double a = PyFloat_AS_DOUBLE(op1);
+        if ((double)a == (double)b) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+    }
+    return (
+        PyObject_RichCompare(op1, op2, Py_EQ));
+}
 
 /* GetAttr */
 static CYTHON_INLINE PyObject *__Pyx_GetAttr(PyObject *o, PyObject *n) {
@@ -17145,6 +17878,93 @@ static PyObject* __Pyx_ImportFrom(PyObject* module, PyObject* name) {
         #endif
     }
     return value;
+}
+
+/* GetItemInt */
+static PyObject *__Pyx_GetItemInt_Generic(PyObject *o, PyObject* j) {
+    PyObject *r;
+    if (!j) return NULL;
+    r = PyObject_GetItem(o, j);
+    Py_DECREF(j);
+    return r;
+}
+static CYTHON_INLINE PyObject *__Pyx_GetItemInt_List_Fast(PyObject *o, Py_ssize_t i,
+                                                              CYTHON_NCP_UNUSED int wraparound,
+                                                              CYTHON_NCP_UNUSED int boundscheck) {
+#if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+    Py_ssize_t wrapped_i = i;
+    if (wraparound & unlikely(i < 0)) {
+        wrapped_i += PyList_GET_SIZE(o);
+    }
+    if ((!boundscheck) || likely(__Pyx_is_valid_index(wrapped_i, PyList_GET_SIZE(o)))) {
+        PyObject *r = PyList_GET_ITEM(o, wrapped_i);
+        Py_INCREF(r);
+        return r;
+    }
+    return __Pyx_GetItemInt_Generic(o, PyInt_FromSsize_t(i));
+#else
+    return PySequence_GetItem(o, i);
+#endif
+}
+static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Tuple_Fast(PyObject *o, Py_ssize_t i,
+                                                              CYTHON_NCP_UNUSED int wraparound,
+                                                              CYTHON_NCP_UNUSED int boundscheck) {
+#if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+    Py_ssize_t wrapped_i = i;
+    if (wraparound & unlikely(i < 0)) {
+        wrapped_i += PyTuple_GET_SIZE(o);
+    }
+    if ((!boundscheck) || likely(__Pyx_is_valid_index(wrapped_i, PyTuple_GET_SIZE(o)))) {
+        PyObject *r = PyTuple_GET_ITEM(o, wrapped_i);
+        Py_INCREF(r);
+        return r;
+    }
+    return __Pyx_GetItemInt_Generic(o, PyInt_FromSsize_t(i));
+#else
+    return PySequence_GetItem(o, i);
+#endif
+}
+static CYTHON_INLINE PyObject *__Pyx_GetItemInt_Fast(PyObject *o, Py_ssize_t i, int is_list,
+                                                     CYTHON_NCP_UNUSED int wraparound,
+                                                     CYTHON_NCP_UNUSED int boundscheck) {
+#if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS && CYTHON_USE_TYPE_SLOTS
+    if (is_list || PyList_CheckExact(o)) {
+        Py_ssize_t n = ((!wraparound) | likely(i >= 0)) ? i : i + PyList_GET_SIZE(o);
+        if ((!boundscheck) || (likely(__Pyx_is_valid_index(n, PyList_GET_SIZE(o))))) {
+            PyObject *r = PyList_GET_ITEM(o, n);
+            Py_INCREF(r);
+            return r;
+        }
+    }
+    else if (PyTuple_CheckExact(o)) {
+        Py_ssize_t n = ((!wraparound) | likely(i >= 0)) ? i : i + PyTuple_GET_SIZE(o);
+        if ((!boundscheck) || likely(__Pyx_is_valid_index(n, PyTuple_GET_SIZE(o)))) {
+            PyObject *r = PyTuple_GET_ITEM(o, n);
+            Py_INCREF(r);
+            return r;
+        }
+    } else {
+        PySequenceMethods *m = Py_TYPE(o)->tp_as_sequence;
+        if (likely(m && m->sq_item)) {
+            if (wraparound && unlikely(i < 0) && likely(m->sq_length)) {
+                Py_ssize_t l = m->sq_length(o);
+                if (likely(l >= 0)) {
+                    i += l;
+                } else {
+                    if (!PyErr_ExceptionMatches(PyExc_OverflowError))
+                        return NULL;
+                    PyErr_Clear();
+                }
+            }
+            return m->sq_item(o, i);
+        }
+    }
+#else
+    if (is_list || PySequence_Check(o)) {
+        return PySequence_GetItem(o, i);
+    }
+#endif
+    return __Pyx_GetItemInt_Generic(o, PyInt_FromSsize_t(i));
 }
 
 /* HasAttr */
